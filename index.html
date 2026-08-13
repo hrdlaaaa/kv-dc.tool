@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Přepravní přehled</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="pageDropOverlay" class="page-drop-overlay" aria-hidden="true">
+    <div class="page-drop-overlay__box">
+      <div class="page-drop-overlay__title">Pusťte PDF kamkoliv na stránku</div>
+      <div class="page-drop-overlay__sub">Soubory se přidají do seznamu k dalšímu zpracování.</div>
+    </div>
+  </div>
+
+  <header class="app-header no-print">
+    <div class="header-row">
+      <div class="header-brand">
+        <div class="brand"><img class="brand-logo" src="./kve-logo.png" alt="K&V ELEKTRO"></div>
+        <div id="headerPageTitle" class="page-title">Přeprava</div>
+      </div>
+  
+      <div id="transportHeaderTools" class="header-center">
+        <div class="header-upload">
+          <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Nahrát PDF soubory">
+            <div class="upload-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M5 20h14"></path></svg>
+            </div>
+            <div class="dropzone-copy"><div class="dropzone-title">Přetáhnout PDF</div><div class="dropzone-subtitle">Nebo soubory vyberte ručně.</div></div>
+            <label class="btn choose-btn" for="fileInput">Vybrat</label>
+            <input id="fileInput" type="file" accept="application/pdf,.pdf" multiple>
+          </div>
+        </div>
+  
+        <div id="toolbar" class="header-actions">
+          <button id="processBtn" class="btn primary" disabled>Zpracovat</button>
+          <button id="clearBtn" class="btn" disabled>Vyčistit</button>
+          <button id="jsonBtn" class="btn" disabled>JSON</button>
+          <button id="xlsxBtn" class="btn" disabled>Excel</button>
+          <button id="printBtn" class="btn" disabled>Tisk</button>
+        </div>
+  
+        <div class="header-files">
+          <details id="filesDetails" class="files-details" open hidden>
+            <summary id="filesSummary">Soubory (0)</summary>
+            <ul id="fileList" class="file-list"></ul>
+          </details>
+        </div>
+      </div>
+  
+      <div id="transportHeaderStatus" class="header-status"><div id="status" class="status"></div></div>
+      <div id="transportHeaderWarnings"><div id="warnings"></div></div>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar no-print" aria-label="Hlavní navigace">
+      <div class="sidebar-title">Přeprava</div>
+      <nav class="sidebar-nav">
+        <button id="navTransport" class="sidebar-link active" type="button" aria-current="page">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+          </span>
+          <span class="sidebar-label">Přeprava</span>
+        </button>
+        <button id="navMapping" class="sidebar-link" type="button">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
+          </span>
+          <span class="sidebar-label">Mapování přepravy</span>
+        </button>
+        <button id="navPresence" class="sidebar-link" type="button">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-3 2-5 5-5s5 2 5 5"/><circle cx="17" cy="9" r="2"/><path d="M15 14c3 0 5 2 5 5"/></svg>
+          </span>
+          <span class="sidebar-label">Přítomnosti</span>
+        </button>
+        <button id="navUserManagement" class="sidebar-link" type="button">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><path d="M3 19c0-3 2-5 5-5s5 2 5 5"/><path d="M16 8h5M18.5 5.5v5"/><path d="M15 15h6M15 19h6"/></svg>
+          </span>
+          <span class="sidebar-label">Správa uživatelů</span>
+        </button>
+      </nav>
+    </aside>
+
+    <div class="content-area">
+      <main class="shell">
+        <section id="transportPage" class="page-view">
+
+
+          <section id="resultsCard" class="panel results-panel" hidden>
+            <div id="results"></div>
+          </section>
+        </section>
+
+        <section id="mappingPage" class="page-view" hidden>
+          <div class="panel mapping-panel">
+            <div class="mapping-head">
+              <div>
+                <h1>Mapování přepravy</h1>
+              </div>
+            </div>
+
+            <div class="mapping-grid">
+              <div class="mapping-card">
+                <div class="mapping-card-titlebar">
+                  <div class="mapping-card-title">Vozidla a čísla aut</div>
+                  <div class="mapping-card-actions">
+                    <button id="addMappingBtn" type="button" class="btn">Přidat vozidlo</button>
+                    <button id="saveVehicleMappingsBtn" type="button" class="btn primary">Uložit změny vozidel</button>
+                  </div>
+                </div>
+                <div class="mapping-table-wrap">
+                  <table class="mapping-table">
+                    <thead><tr><th>SPZ / kód vozidla</th><th>Číslo auta</th><th>Skupina</th><th></th></tr></thead>
+                    <tbody id="vehicleMappingBody"></tbody>
+                  </table>
+                </div>
+                <div class="mapping-card-footer">
+                  <div id="vehicleMappingStatus" class="mapping-status"></div>
+                </div>
+              </div>
+
+              <div class="mapping-card">
+                <div class="mapping-card-title">Pravidla přepravy</div>
+                <div class="rule-list">
+                  <div class="rule-field"><label for="insideLabelInput">Název skupiny uvnitř</label><input id="insideLabelInput" class="mapping-input"></div>
+                  <div class="rule-field"><label for="outsideLabelInput">Název skupiny venku</label><input id="outsideLabelInput" class="mapping-input"></div>
+                  <div class="rule-field"><label for="branchPrefixInput">Prefix vlastní pobočky</label><input id="branchPrefixInput" class="mapping-input" placeholder="K &amp; V"></div>
+                  <label class="rule-check"><input id="emphasizeBranchInput" type="checkbox"> Zvýraznit vlastní pobočku tučně</label>
+                </div>
+                <div class="mapping-card-footer">
+                  <div id="transportRulesStatus" class="mapping-status"></div>
+                  <button id="saveTransportRulesBtn" type="button" class="btn primary">Uložit pravidla přepravy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="presencePage" class="page-view presence-page" hidden>
+          <div class="presence-toolbar no-print">
+            <label for="presenceVariant">Přehled</label>
+            <select id="presenceVariant" class="presence-select">
+              <option value="">Vyberte přehled</option>
+              <option value="prijem">Příjem</option>
+              <option value="vydej">Výdej</option>
+              <option value="kabely">Kabely</option>
+            </select>
+          </div>
+          <div id="presenceStage" class="presence-stage">
+            <div id="presencePlaceholder" class="presence-placeholder">Vyberte Příjem, Výdej nebo Kabely.</div>
+            <iframe id="presenceFrame" class="presence-frame" title="Přehled přítomnosti" hidden></iframe>
+          </div>
+        </section>
+
+        <section id="userManagementPage" class="page-view user-management-page" hidden>
+          <div class="panel user-management-panel">
+            <div class="user-management-head">
+              <h1>Správa uživatelů</h1>
+              <div class="user-management-head-actions">
+                <button id="refreshUserManagementBtn" class="btn btn-secondary user-management-refresh" type="button">Aktualizovat uživatele</button>
+                <div id="userManagementStatus" class="user-management-status">Připraveno</div>
+              </div>
+            </div>
+            <div class="user-management-table-wrap">
+              <table class="user-management-table">
+                <thead>
+                  <tr class="user-management-columns">
+                    <th>Jméno</th>
+                    <th>Místo</th>
+                    <th>Oddělení</th>
+                    <th>Nadřízený</th>
+                    <th>Směna</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                    <th class="center-col">Kontrola</th>
+                    <th class="center-col">Docházkový bonus</th>
+                  </tr>
+                  <tr class="user-management-filters">
+                    <th><input type="search" data-user-filter="name" aria-label="Filtrovat podle jména" placeholder="Filtrovat"></th>
+                    <th><select data-user-filter="place" aria-label="Filtrovat podle místa"><option value="">Vše</option></select></th>
+                    <th><select data-user-filter="department" aria-label="Filtrovat podle oddělení"><option value="">Vše</option></select></th>
+                    <th><select data-user-filter="manager" aria-label="Filtrovat podle nadřízeného"><option value="">Vše</option></select></th>
+                    <th><select data-user-filter="shift" aria-label="Filtrovat podle směny"><option value="">Vše</option></select></th>
+                    <th><input type="search" data-user-filter="email" aria-label="Filtrovat podle emailu" placeholder="Filtrovat"></th>
+                    <th><input type="search" data-user-filter="phone" aria-label="Filtrovat podle telefonu" placeholder="Filtrovat"></th>
+                    <th>
+                      <select data-user-filter="control" aria-label="Filtrovat podle kontroly">
+                        <option value="">Vše</option>
+                        <option value="yes">Ano</option>
+                        <option value="no">Ne</option>
+                      </select>
+                    </th>
+                    <th>
+                      <select data-user-filter="bonus" aria-label="Filtrovat podle docházkového bonusu">
+                        <option value="">Vše</option>
+                        <option value="yes">Ano</option>
+                        <option value="no">Ne</option>
+                      </select>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="userManagementBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="./transport-config.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="./app.js"></script>
+  <script src="./user-management.js"></script>
+</body>
+</html>
