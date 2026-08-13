@@ -82,6 +82,7 @@
     let allRows = [];
     let loadedOnce = false;
     let refreshPromise = null;
+    let peopleRenderedOnce = false;
     const filters = {
       name: "", place: "", department: "", manager: "", shift: "",
       email: "", phone: "", control: "", bonus: ""
@@ -105,9 +106,38 @@
       snapshot.forEach(docSnap => { next[decodeURIComponent(docSnap.id)] = docSnap.data(); });
       localState = next;
       renderFilteredRows();
+      reconcileAnnotations();
     }, error => {
       console.error("Anotace uživatelů (email/kontrola/bonus): chyba synchronizace s Firestore.", error);
     });
+
+    // Kontrola a docházkový bonus musí mít v databázi vždy explicitní true/false pro
+    // každého, kdo je aktuálně v seznamu (ne chybějící záznam), noví lidé se doplní
+    // automaticky, a komu ze seznamu zmizí, se v databázi nastaví na false.
+    function reconcileAnnotations() {
+      if (!peopleRenderedOnce) return;
+      const currentIds = new Set(allRows.map(row => row.id));
+
+      for (const row of allRows) {
+        const saved = localState[row.id] || {};
+        const patch = {};
+        if (typeof saved.control !== "boolean") patch.control = false;
+        if (typeof saved.bonus !== "boolean") patch.bonus = false;
+        if (Object.keys(patch).length) {
+          setDoc(doc(annotationsCollectionRef, annotationDocId(row.id)), patch, { merge: true }).catch(error => {
+            console.error(`Nepodařilo se založit výchozí anotaci pro uživatele ${row.id}.`, error);
+          });
+        }
+      }
+
+      for (const [id, saved] of Object.entries(localState)) {
+        if (currentIds.has(id)) continue;
+        if (saved.control === false && saved.bonus === false) continue;
+        setDoc(doc(annotationsCollectionRef, annotationDocId(id)), { control: false, bonus: false }, { merge: true }).catch(error => {
+          console.error(`Nepodařilo se vynulovat anotaci uživatele ${id}, který zmizel ze seznamu.`, error);
+        });
+      }
+    }
 
     // Stará čistě lokální data z předchozí verze appky (než se anotace přesunuly
     // do Firestore) už dál nepoužíváme.
@@ -223,8 +253,10 @@
 
     function render() {
       allRows = buildRows(people);
+      peopleRenderedOnce = true;
       updateFilterOptions();
       renderFilteredRows();
+      reconcileAnnotations();
     }
 
     function updateFilterOptions() {
