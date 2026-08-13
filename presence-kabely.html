@@ -840,13 +840,6 @@
         .sort((a, b) => String(a.zacatek || "").localeCompare(String(b.zacatek || "")))[0] || null;
     }
 
-    function hasActiveInterruption(person) {
-      if (person.isPritomna !== true) return false;
-      const text = normalizeText(getInterruptionText(person));
-      if (!text || text === "pritomen" || text === "prichod" || text === "na pracovisti") return false;
-      return Boolean(person.casPreruseni || person.presence?.casPreruseni || text);
-    }
-
     function isSmokingPause(person) {
       const text = normalizeText([
         getInterruptionText(person), person.poznamka, person.presence?.poznamka
@@ -866,55 +859,6 @@
 
     function getPersonName(person) {
       return person.celeJmeno || person.osobaPopis || `Osoba ${person.osobaId || ""}`.trim();
-    }
-
-    function getOrgPath(person) {
-      if (Array.isArray(person.orgStructure?.path) && person.orgStructure.path.length > 0) {
-        return person.orgStructure.path.map(String).map(value => value.trim()).filter(Boolean);
-      }
-      if (person.orgPathText) {
-        return String(person.orgPathText).split("/").map(value => value.trim()).filter(Boolean);
-      }
-      const fallback = person.orgUnitNazev || person.orgjNazev;
-      return fallback ? [String(fallback).trim()] : [];
-    }
-
-    function findBranchIndex(path, branch) {
-      const normalizedPath = path.map(normalizeOrgSegment);
-      const normalizedBranch = branch.map(normalizeOrgSegment);
-
-      for (let start = 0; start <= normalizedPath.length - normalizedBranch.length; start++) {
-        let matches = true;
-        for (let offset = 0; offset < normalizedBranch.length; offset++) {
-          if (!segmentsMatch(normalizedPath[start + offset], normalizedBranch[offset])) {
-            matches = false;
-            break;
-          }
-        }
-        if (matches) return start;
-      }
-      return -1;
-    }
-
-    function normalizeOrgSegment(value) {
-      return normalizeText(value).replace(/\s+/g, " ");
-    }
-
-    function segmentsMatch(pathSegment, targetSegment) {
-      return pathSegment === targetSegment || pathSegment.includes(targetSegment) || targetSegment.includes(pathSegment);
-    }
-
-    function compareOrgNames(a, b) {
-      const aNumber = extractOrgNumber(a);
-      const bNumber = extractOrgNumber(b);
-      if (aNumber !== bNumber) return aNumber - bNumber;
-      return a.localeCompare(b, "cs", { numeric: true, sensitivity: "base" });
-    }
-
-    function extractOrgNumber(value) {
-      const numbers = String(value || "").match(/\d+/g);
-      if (!numbers?.length) return Number.MAX_SAFE_INTEGER;
-      return Number(numbers[numbers.length - 1]);
     }
 
     function isEmployeeActive(person) {

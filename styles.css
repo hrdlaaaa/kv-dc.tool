@@ -193,12 +193,6 @@
       margin-bottom: 14px;
       backdrop-filter: blur(8px);
     }
-    .upload-grid {
-      display: grid;
-      grid-template-columns: minmax(320px, 1fr) auto;
-      gap: 14px;
-      align-items: center;
-    }
     .dropzone {
       border: 1.5px dashed #aebbd0;
       border-radius: 14px;
@@ -249,14 +243,6 @@
     .btn.danger { color: var(--danger); background: #fff; }
     .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
     .choose-btn { white-space: nowrap; background: #fff; color: var(--navy); border-color: #c8d3e3; }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      justify-content: flex-end;
-      margin: 0;
-    }
     .file-list { margin: 0; padding: 7px 9px 9px; list-style: none; }
     .files-details {
       margin-top: 12px;
@@ -468,8 +454,6 @@
       margin-bottom: 14px;
     }
     .mapping-head h1 { margin: 0; font-size: 1.22rem; color: var(--navy); }
-    .mapping-head p { margin: 4px 0 0; color: var(--muted); font-size: .88rem; }
-    .mapping-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
     .mapping-grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
     .mapping-card {
       border: 1px solid var(--line);
@@ -500,7 +484,6 @@
     .rule-field { display: grid; gap: 5px; }
     .rule-field label { font-size: .78rem; font-weight: 800; color: #42516a; }
     .rule-check { display: flex; align-items: center; gap: 8px; font-size: .84rem; color: #334155; }
-    .mapping-note { margin-top: 12px; padding: 10px 12px; border-radius: 9px; background: #f7f9fc; color: var(--muted); font-size: .8rem; line-height: 1.45; }
     .mapping-status { min-height: 18px; margin-top: 8px; font-size: .8rem; font-weight: 700; color: var(--success); }
 
     @media (max-width: 980px) {

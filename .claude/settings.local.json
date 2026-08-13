@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk 'NR==433{print substr\\($0,1,300\\)}' presence-prijem.html)",
+      "Bash(awk 'NR>=420 && NR<=440 { printf \"%d: %s\\\\n\", NR, \\(length\\($0\\)>200 ? substr\\($0,1,200\\) \"...[TRUNCATED]\" : $0\\) }' presence-prijem.html)",
+      "Bash(sed -n '441,1018p' presence-prijem.html > /tmp/pp_body.html 2>/dev/null || sed -n '441,1018p' presence-prijem.html > \"C:/Users/THRDLICKA/Downloads/prepravni-pdf-parser-productio/mindvio-webapp/.scratch_pp_body.html\" *)",
+      "Bash(grep -v \"^.\\\\{2000,\\\\}$\")",
+      "Read(//c/Users/THRDLICKA/AppData/Local/Temp/claude/C--Users-THRDLICKA-Downloads-prepravni-pdf-parser-productio-mindvio-webapp/115660b0-7034-44a8-aa69-9f9d899136da/scratchpad/**)",
+      "Bash(awk '{ print length, NR }' presence-vydej.html)",
+      "Bash(awk '{ print length, NR }' presence-kabely.html)"
+    ]
+  }
+}

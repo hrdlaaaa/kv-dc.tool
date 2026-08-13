@@ -425,10 +425,6 @@
       });
     }
 
-    function getBaseOrgCode(person) {
-      return parseOrgPosition(getPrimaryOrgPosition(person)).base;
-    }
-
     function getPrimaryOrgPosition(person) {
       // Pro určení vlastní pozice nepoužívej celý orgPath ani parent hodnoty.
       // Ty obsahují nadřazené kódy a mohly by člověku přiřadit cizí pozici.
@@ -514,15 +510,6 @@
       return matches.map(value => value.replace(/\s+/g, "").replace("-", "/"));
     }
 
-    function comparePersonOrgOrder(a, b) {
-      const ac = getPrimaryOrgPosition(a), bc = getPrimaryOrgPosition(b);
-      const d = compareOrgPosition(ac, bc);
-      if (d) return d;
-      const ao = getExplicitPersonOrder(a), bo = getExplicitPersonOrder(b);
-      if (ao !== bo) return ao - bo;
-      return getPersonName(a).localeCompare(getPersonName(b), "cs-CZ", { numeric: true, sensitivity: "base" });
-    }
-
     function compareOrgPosition(a, b) {
       const aa = parseOrgPosition(a), bb = parseOrgPosition(b);
       if (aa.base !== bb.base) return aa.base.localeCompare(bb.base, "cs-CZ", { numeric: true });
@@ -533,15 +520,6 @@
       const raw = String(value || "");
       const match = raw.match(/^(\d{9})(?:\/(\d{1,4}))?$/);
       return match ? { base: match[1], sub: match[2] ? Number(match[2]) : Number.MAX_SAFE_INTEGER } : { base: raw, sub: Number.MAX_SAFE_INTEGER };
-    }
-
-    function getExplicitPersonOrder(person) {
-      const values = [person.poradi, person.order, person.sortOrder, person.orgPoradi, person.orgStructure?.order, person.orgStructure?.sortOrder, person.poradiVOJ, person.poradiVOrg];
-      for (const value of values) {
-        const n = Number(value);
-        if (Number.isFinite(n)) return n;
-      }
-      return 999999;
     }
 
     function isEmployeeActive(person) {

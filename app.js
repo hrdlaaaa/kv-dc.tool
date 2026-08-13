@@ -99,7 +99,6 @@
       let activePage = 'transport';
       let vehicleDirty = false;
       let rulesDirty = false;
-      let newVehicleRow = false;
 
       function hasUnsavedMappingChanges() { return vehicleDirty || rulesDirty; }
       function confirmLeaveMapping() {
@@ -109,7 +108,6 @@
       function discardMappingChanges() {
         vehicleDirty = false;
         rulesDirty = false;
-        newVehicleRow = false;
         renderMappingEditor();
       }
 
@@ -235,7 +233,7 @@
       addMappingBtn.addEventListener('click', () => {
         const index=Date.now();
         mappingBody.insertAdjacentHTML('afterbegin', mappingRowTemplate({vehicle:'',carNumber:'',group:'outside'}, index));
-        vehicleDirty=true; newVehicleRow=true;
+        vehicleDirty=true;
         saveVehicleMappingsBtn.disabled=false;
         mappingBody.querySelector('tr:first-child [data-field="vehicle"]')?.focus();
       });
@@ -251,7 +249,7 @@
         try {
           transportConfig={...transportConfig,vehicles:sortVehicles(collectVehicles())};
           localStorage.setItem(CONFIG_STORAGE_KEY,JSON.stringify(transportConfig));
-          vehicleDirty=false; newVehicleRow=false;
+          vehicleDirty=false;
           applyMappingToCurrentResults();
           renderMappingEditor();
           vehicleMappingStatus.textContent='Změny vozidel byly uloženy.';
@@ -650,15 +648,8 @@
         const aCar = String(a?.data?.cisloAuta ?? '').trim();
         const bCar = String(b?.data?.cisloAuta ?? '').trim();
 
-        const rank = value => {
-          if (/^\d+$/.test(value)) return { group: 0, number: Number(value), text: value };
-          const ex = value.match(/^EX(\d+)$/i);
-          if (ex) return { group: 1, number: Number(ex[1]), text: value };
-          return { group: 2, number: 0, text: value };
-        };
-
-        const ar = rank(aCar);
-        const br = rank(bCar);
+        const ar = vehicleSortRank(aCar);
+        const br = vehicleSortRank(bCar);
 
         // 1) čistá čísla 1..n
         // 2) EX1..EXn
