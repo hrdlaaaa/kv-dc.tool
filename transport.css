@@ -1,0 +1,262 @@
+/* Hlavička: upload / nástrojová lišta / stav / varování (jen na Přepravě) */
+.header-upload {
+  flex: 0 0 auto;
+  width: 205px;
+  min-width: 205px;
+  max-width: 205px;
+  align-self: center;
+}
+.app-header .dropzone {
+  min-height: 34px;
+  height: 34px;
+  padding: 3px 5px;
+  border-radius: 8px;
+  gap: 5px;
+}
+.app-header .upload-icon { width: 24px; height: 24px; flex-basis: 24px; border-radius: 7px; }
+.app-header .upload-icon svg { width: 14px; height: 14px; }
+.app-header .dropzone-title { font-size: .78rem; line-height: 1; white-space: nowrap; }
+.app-header .dropzone-subtitle { display: none; }
+.app-header .choose-btn { min-height: 26px; height: 26px; padding: 3px 8px; border-radius: 7px; font-size: .78rem; }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.header-actions .btn {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: .82rem;
+}
+.header-files {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.app-header .files-details {
+  margin: 0;
+  width: 175px;
+  border-radius: 8px;
+  overflow: visible;
+  position: relative;
+}
+.app-header .files-details > summary {
+  padding: 7px 9px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  font-size: .8rem;
+  background: #f8faff;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.app-header .files-details[open] > summary { border-bottom: 0; }
+.app-header .file-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  width: min(520px, 70vw);
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(20,44,106,.16);
+}
+.app-header .status {
+  margin: 0;
+  min-height: 0;
+  font-size: .78rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-header #warnings:empty { display: none; }
+.app-header #warnings:not(:empty) {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: calc(100% + 6px);
+  z-index: 45;
+}
+#transportHeaderWarnings { position: static; }
+
+@media (max-width: 640px) {
+  .header-actions { overflow-x: auto; padding-bottom: 2px; }
+  .header-upload { width: 190px; min-width: 190px; max-width: 190px; }
+  .choose-btn { margin-left: auto; }
+}
+
+/* Přetažení PDF kamkoliv na stránku */
+.page-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+  background: rgba(14,36,91,.18);
+  backdrop-filter: blur(3px);
+}
+.page-drop-overlay.active { display: flex; }
+.page-drop-overlay__box {
+  width: min(720px, calc(100vw - 48px));
+  padding: 30px 34px;
+  border: 2px dashed rgba(255,255,255,.95);
+  border-radius: 20px;
+  background: rgba(20,44,106,.93);
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(14,36,91,.28);
+}
+.page-drop-overlay__title { font-size: 1.35rem; font-weight: 850; }
+.page-drop-overlay__sub { margin-top: 6px; opacity: .86; font-size: .94rem; }
+body.global-drag .dropzone { border-color: var(--navy); background: #eef3fb; }
+
+/* Dropzone (i v samotném panelu, ne jen v hlavičce) */
+.dropzone {
+  border: 1.5px dashed #aebbd0;
+  border-radius: 14px;
+  min-height: 78px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #fbfcff 0%, #f6f9fd 100%);
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+}
+.dropzone:hover { border-color: #7186aa; box-shadow: 0 0 0 3px rgba(20,44,106,.05); }
+.dropzone.drag { border-color: var(--navy); background: #eef3fb; box-shadow: 0 0 0 4px rgba(20,44,106,.08); }
+.dropzone input { display: none; }
+.upload-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: var(--navy);
+  box-shadow: 0 8px 20px rgba(20,44,106,.18);
+}
+.upload-icon svg { width: 24px; height: 24px; }
+.dropzone-copy { min-width: 0; }
+.dropzone-title { font-weight: 800; color: var(--navy); font-size: .98rem; }
+.dropzone-subtitle { color: var(--muted); margin-top: 3px; font-size: .87rem; }
+.choose-btn { white-space: nowrap; background: #fff; color: var(--navy); border-color: #c8d3e3; }
+
+.file-list { margin: 0; padding: 7px 9px 9px; list-style: none; }
+.files-details {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.9);
+  overflow: hidden;
+}
+.files-details[hidden] { display: none; }
+.files-details > summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  font-weight: 750;
+  color: var(--navy);
+  user-select: none;
+  list-style-position: inside;
+  background: #f8faff;
+}
+.files-details[open] > summary { border-bottom: 1px solid var(--line); }
+.file-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #edf1f6;
+  background: #fff;
+}
+.file-list li:last-child { border-bottom: 0; }
+
+.status { margin-top: 10px; min-height: 20px; font-weight: 650; color: var(--muted); }
+.status.ok { color: var(--success); }
+.status.error { color: var(--danger); }
+.warning {
+  margin-top: 10px;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  padding: 10px 12px;
+  border-radius: 10px;
+  line-height: 1.45;
+}
+
+/* Výsledková tabulka */
+.results-panel { padding: 16px 16px 22px; }
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 10px;
+}
+.section-title::before {
+  content: '';
+  width: 5px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--red);
+}
+.section-title h2 { margin: 0; font-size: 1.12rem; color: var(--navy); }
+.table-wrap { width: 100%; overflow: visible; margin: 0 0 22px; }
+.result-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-family: Arial, sans-serif;
+  font-size: .78rem;
+  border: 1px solid #dce3ec;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(20,44,106,.05);
+}
+.result-table th {
+  padding: .72rem .6rem;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+  vertical-align: middle;
+  border-right: 1px solid rgba(255,255,255,.16);
+  overflow-wrap: normal;
+}
+.result-table td {
+  padding: .68rem .58rem;
+  color: #27364b;
+  border-bottom: 1px solid #e8edf4;
+  border-right: 1px solid #e4e9f0;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: none;
+  text-align: center;
+  vertical-align: middle;
+}
+.result-table th:nth-child(1), .result-table td:nth-child(1) { width: 92px; }
+.result-table th:nth-child(2), .result-table td:nth-child(2) { width: 104px; }
+.result-table th:nth-child(3), .result-table td:nth-child(3) { width: 112px; }
+.result-table th:last-child, .result-table td:last-child { border-right: 0; }
+.result-table tbody tr:last-child td { border-bottom: 0; }
+.result-table tbody tr:nth-child(even) { background: #f8fafd; }
+.result-table tbody tr:hover { background: #eef3fa; }
+.empty { color: var(--muted); padding: 14px 0; }
+
+@media print {
+  .table-wrap { overflow: visible; }
+  .result-table { box-shadow: none; border-color: #bbb; }
+}

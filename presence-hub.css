@@ -1,0 +1,26 @@
+.presence-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
+  flex: 0 0 auto;
+}
+.presence-toolbar label { font-size: .86rem; font-weight: 800; color: var(--navy); }
+.presence-select {
+  min-width: 240px; height: 38px; padding: 6px 34px 6px 10px;
+  border: 1px solid #ccd6e5; border-radius: 9px; background: #fff;
+  color: var(--text); font: inherit; font-weight: 700;
+}
+.presence-stage {
+  flex: 1 1 auto;
+  min-height: 520px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #eef2f9;
+  border: 1px solid rgba(20,44,106,.12);
+  box-shadow: var(--shadow);
+}
+.presence-frame { width: 100%; height: 100%; border: 0; display: block; background: #eef2f9; }
+.presence-placeholder { height: 100%; display: grid; place-items: center; color: var(--muted); font-weight: 750; }
+
+@media (max-width: 980px) {
+  .presence-select { min-width: 190px; }
+}

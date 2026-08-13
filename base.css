@@ -1,0 +1,244 @@
+:root {
+  color-scheme: light;
+  --navy: #142c6a;
+  --navy-2: #0e245b;
+  --red: #e4232f;
+  --bg: #f3f6fb;
+  --card: rgba(255,255,255,.96);
+  --text: #152033;
+  --muted: #64748b;
+  --line: #d9e1ec;
+  --success: #0f7a4f;
+  --danger: #c62828;
+  --warning-bg: #fff8e6;
+  --warning-border: #ead395;
+  --shadow: 0 12px 32px rgba(20,44,106,.09);
+  --app-header-height: 60px;
+  --sidebar-width: 214px;
+}
+* { box-sizing: border-box; }
+html {
+  min-height: 100%;
+  background: #f3f6fb;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding-top: var(--app-header-height);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, rgba(255,255,255,.97), rgba(243,246,251,.95));
+  color: var(--text);
+  position: relative;
+  isolation: isolate;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 85% 8%, rgba(20,44,106,.07), transparent 32%),
+    url('./kve-background-motif.svg') right -105px bottom -35px / 640px auto no-repeat;
+  opacity: .11;
+  z-index: -1;
+}
+[hidden] { display: none !important; }
+
+.shell {
+  width: 100%;
+  margin: 0;
+  padding: 18px 22px 36px;
+  min-height: calc(100vh - var(--app-header-height));
+}
+
+/* Pevná hlavička přes celou šířku */
+.app-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 500;
+  height: var(--app-header-height);
+  min-height: var(--app-header-height);
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 0;
+  background: rgba(255,255,255,.94);
+  border: 1px solid rgba(20,44,106,.10);
+  border-bottom: 1px solid rgba(20,44,106,.10);
+  box-shadow: 0 4px 14px rgba(20,44,106,.06);
+  overflow: visible;
+}
+.app-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  background: var(--red);
+}
+.header-row {
+  position: relative;
+  height: 100%;
+}
+.header-brand {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.brand { display: flex; align-items: center; flex: 0 0 auto; }
+.brand-logo { display: block; width: 210px; max-height: 36px; object-fit: contain; object-position: left center; }
+.page-title {
+  flex: 0 0 auto;
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: -.02em;
+  white-space: nowrap;
+}
+.header-center {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+.header-status {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 260px;
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  :root { --sidebar-width: 66px; }
+  .header-center { left: auto; right: 10px; transform: translateY(-50%); }
+  .header-status { display: none; }
+  .brand-logo { width: 190px; }
+  .page-title { display: none; }
+}
+@media (max-width: 640px) {
+  .app-header { min-height: 52px; height: 52px; padding: 7px 10px; }
+  .brand-logo { width: 170px; max-height: 34px; }
+  .shell { padding: 10px; }
+}
+
+@media print {
+  body { background: #fff; }
+  body::before, .no-print, .app-header { display: none !important; }
+  .shell { padding: 0; }
+  .panel { border: 0; box-shadow: none; padding: 0; background: #fff; }
+}
+
+/* Karty */
+.panel {
+  background: var(--card);
+  border: 1px solid rgba(20,44,106,.12);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(8px);
+}
+
+/* Tlačítka */
+.btn {
+  appearance: none;
+  border: 1px solid #d4ddea;
+  border-radius: 10px;
+  padding: 9px 14px;
+  min-height: 40px;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 750;
+  cursor: pointer;
+  background: #f4f6f9;
+  color: #263449;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(20,44,106,.09); border-color: #b9c5d8; }
+.btn.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+.btn.primary:hover:not(:disabled) { background: var(--navy-2); border-color: var(--navy-2); }
+.btn.danger { color: var(--danger); background: #fff; }
+.btn.btn-secondary { background: #fff; color: var(--navy); border-color: #c8d3e3; }
+.btn.btn-secondary:hover:not(:disabled) { background: #f4f6f9; }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+.muted { color: var(--muted); }
+
+/* Layout se sidebar navigací */
+.app-layout { min-height: calc(100vh - var(--app-header-height)); }
+.sidebar {
+  position: fixed;
+  top: var(--app-header-height);
+  bottom: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  z-index: 100;
+  padding: 18px 12px;
+  background: rgba(12, 31, 80, .97);
+  border-right: 1px solid rgba(255,255,255,.10);
+  box-shadow: 8px 0 28px rgba(20,44,106,.10);
+  color: #fff;
+}
+.sidebar-title {
+  padding: 4px 10px 16px;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+}
+.sidebar-nav { display: grid; gap: 6px; }
+.sidebar-link {
+  appearance: none;
+  border: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255,255,255,.82);
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 750;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease, transform .14s ease;
+}
+.sidebar-link:hover { background: rgba(255,255,255,.08); color: #fff; }
+.sidebar-link.active { background: rgba(255,255,255,.14); color: #fff; box-shadow: inset 3px 0 0 var(--red); }
+.sidebar-icon { width: 20px; height: 20px; display: grid; place-items: center; flex: 0 0 20px; }
+.sidebar-icon svg { width: 18px; height: 18px; }
+.content-area {
+  margin-left: var(--sidebar-width);
+  min-height: calc(100vh - var(--app-header-height));
+}
+
+@media (max-width: 980px) {
+  .sidebar { width: 66px; padding: 14px 8px; }
+  .sidebar-title, .sidebar-label { display: none; }
+  .sidebar-link { justify-content: center; padding: 10px; }
+  .content-area { margin-left: 66px; }
+}
+
+/* Mapování, Přítomnosti a Správa uživatelů jsou "dashboardové" stránky s pevnou
+   výškou přesně na dostupnou plochu pod hlavičkou - uvnitř nich pak roluje jen
+   vyhrazená vnitřní oblast (tabulka/iframe), nikoli celá stránka. Přeprava
+   (výsledky zpracování PDF) naopak roluje jako běžný dokument. */
+.dashboard-page {
+  height: calc(100vh - var(--app-header-height) - 54px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+@media (max-width: 980px) {
+  /* Na úzkých displejích necháme radši rolovat celou stránku než cokoliv mačkat. */
+  .dashboard-page { height: auto; overflow: visible; }
+}

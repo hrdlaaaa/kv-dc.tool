@@ -1,0 +1,143 @@
+.user-management-panel {
+  padding: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.user-management-head {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  flex: 0 0 auto;
+}
+.user-management-head h1 { margin: 0; font-size: 1.18rem; color: var(--navy); }
+.user-management-status { color: var(--muted); font-size: .82rem; font-weight: 750; }
+.user-management-status.error { color: var(--danger); }
+.user-management-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: #fff;
+}
+.user-management-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
+.user-management-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 9px 10px;
+  background: var(--navy);
+  color: #fff;
+  text-align: left;
+  white-space: nowrap;
+}
+.user-management-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e8edf4;
+  vertical-align: middle;
+  background: #fff;
+}
+.user-management-table tbody tr:hover td { background: #f8faff; }
+.user-management-table .center-col { text-align: center; }
+.user-name-cell { font-weight: 800; color: #17233b; white-space: nowrap; }
+.user-email-readonly { white-space: nowrap; }
+.user-email-input {
+  width: 100%;
+  min-width: 190px;
+  height: 30px;
+  padding: 4px 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+}
+.user-email-input:focus { outline: 2px solid rgba(20,44,106,.15); border-color: #8da0bf; }
+.state-dot {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #d92d20;
+  box-shadow: 0 0 0 1px rgba(127,29,29,.28);
+  cursor: pointer;
+  vertical-align: middle;
+}
+.state-dot.on { background: #159447; box-shadow: 0 0 0 1px rgba(21,148,71,.32); }
+.state-dot:focus-visible { outline: 2px solid var(--navy); outline-offset: 3px; }
+.user-management-empty { padding: 28px !important; text-align: center; color: var(--muted); font-weight: 700; }
+
+/* Filtry ve Správě uživatelů */
+.user-management-table .user-management-columns th {
+  top: 0;
+  z-index: 5;
+  height: 34px;
+}
+.user-management-table .user-management-filters th {
+  top: 34px;
+  z-index: 4;
+  padding: 5px 6px 7px;
+  background: var(--navy);
+}
+.user-management-filters input,
+.user-management-filters select {
+  width: 100%;
+  min-width: 88px;
+  height: 28px;
+  margin: 0;
+  padding: 3px 6px;
+  border: 1px solid rgba(255,255,255,.42);
+  border-radius: 5px;
+  background: #fff;
+  color: #17233b;
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 650;
+}
+.user-management-filters input::placeholder { color: #7b879b; opacity: 1; }
+.user-management-filters input:focus,
+.user-management-filters select:focus {
+  outline: 2px solid rgba(255,255,255,.55);
+  outline-offset: 1px;
+}
+.user-management-filters th:nth-last-child(-n+2) { min-width: 104px; }
+
+/* Editovatelný email nesmí zvyšovat výšku řádku */
+.user-management-table tbody tr { height: 36px; }
+.user-management-table td { height: 36px; padding-top: 3px; padding-bottom: 3px; }
+.user-email-input {
+  height: 26px;
+  line-height: 18px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  vertical-align: middle;
+}
+
+/* Akce v hlavičce */
+.user-management-head-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+.user-management-refresh {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.user-management-refresh:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+@media (max-width: 980px) {
+  .user-management-table-wrap { max-height: calc(100vh - var(--app-header-height) - 100px); }
+}

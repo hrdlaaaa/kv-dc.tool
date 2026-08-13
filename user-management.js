@@ -18,29 +18,6 @@
       setDoc
     } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
 
-    // app.js i tento soubor potřebují Firestore ve stejném kv-transport-mapping projektu
-    // (mapování vozidel, resp. anotace uživatelů). Otevřít k němu z jedné stránky dvě
-    // samostatná připojení současně vede k nedeterministické "permission-denied" chybě
-    // při startu, proto si obě sdílí jedno společné přes window.
-    function connectSharedKvTransportMappingFirestore() {
-      if (!window.__kvTransportMappingFirestorePromise) {
-        window.__kvTransportMappingFirestorePromise = (async () => {
-          const { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } =
-            await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
-          const app = initializeApp({
-            apiKey: "AIzaSyBX3Phi9CNQPjxYXMKil7exLrJ7ZbRUMbM",
-            authDomain: "kv-transport-mapping.firebaseapp.com",
-            projectId: "kv-transport-mapping",
-            storageBucket: "kv-transport-mapping.firebasestorage.app",
-            messagingSenderId: "144100896901",
-            appId: "1:144100896901:web:2ceef97e784e06385239ec"
-          }, "kvTransportMapping");
-          return initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
-        })();
-      }
-      return window.__kvTransportMappingFirestorePromise;
-    }
-
     const ROOT_ORG_CODE = "110700000";
     const ORG_RANGE_END = "110800000";
     const COLLECTION_NAME = "okbase_absences_by_person";
@@ -73,9 +50,8 @@
 
     const body = document.getElementById("userManagementBody");
     const status = document.getElementById("userManagementStatus");
-    const page = document.getElementById("userManagementPage");
     const refreshButton = document.getElementById("refreshUserManagementBtn");
-    if (!body || !status || !page || !refreshButton) throw new Error("Správa uživatelů nemá připravené prvky stránky.");
+    if (!body || !status || !refreshButton) throw new Error("Správa uživatelů nemá připravené prvky stránky.");
 
     let localState = {};
     let people = [];
@@ -95,9 +71,19 @@
     const usersQuery = query(collection(db, COLLECTION_NAME), orderBy("osobaId", "asc"));
 
     // Email/kontrola/docházkový bonus jsou anotace nad konkrétními lidmi, ale ukládáme
-    // je do stejného sdíleného kv-transport-mapping připojení jako mapování přepravy
-    // (odděleně od dat o přítomnosti), aby se sdílely živě pro všechny stejným způsobem.
-    const annotationsDb = await connectSharedKvTransportMappingFirestore();
+    // je do stejného kv-transport-mapping projektu jako mapování přepravy (odděleně
+    // od dat o přítomnosti), aby se sdílely živě pro všechny stejným způsobem.
+    const annotationsFirebaseApp = initializeApp({
+      apiKey: "AIzaSyBX3Phi9CNQPjxYXMKil7exLrJ7ZbRUMbM",
+      authDomain: "kv-transport-mapping.firebaseapp.com",
+      projectId: "kv-transport-mapping",
+      storageBucket: "kv-transport-mapping.firebasestorage.app",
+      messagingSenderId: "144100896901",
+      appId: "1:144100896901:web:2ceef97e784e06385239ec"
+    }, "kvTransportMapping");
+    const annotationsDb = initializeFirestore(annotationsFirebaseApp, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
     const annotationsCollectionRef = collection(annotationsDb, ANNOTATIONS_COLLECTION_NAME);
     const annotationDocId = id => encodeURIComponent(id);
 
@@ -148,11 +134,10 @@
 
     refreshButton.addEventListener("click", () => refreshFromServer(false));
 
-    const pageObserver = new MutationObserver(() => {
-      if (!page.hidden) ensureUsersLoaded();
-    });
-    pageObserver.observe(page, { attributes: true, attributeFilter: ["hidden"] });
-    if (!page.hidden) ensureUsersLoaded();
+    ensureUsersLoaded();
+    // Dřív se svěžest dat kontrolovala při každém přepnutí zpět na tuto SPA "stránku";
+    // teď je to samostatný dokument, takže totéž hlídáme pravidelně, dokud je otevřený.
+    setInterval(() => { if (!document.hidden) ensureUsersLoaded(); }, 30 * 60 * 1000);
 
     async function ensureUsersLoaded() {
       if (!loadedOnce) {

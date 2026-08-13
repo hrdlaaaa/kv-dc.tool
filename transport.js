@@ -1,0 +1,612 @@
+(async () => {
+  'use strict';
+
+  if (!window.pdfjsLib) {
+    const status = document.getElementById('status');
+    if (status) {
+      status.textContent = 'Nepodařilo se načíst PDF knihovnu. Zkontrolujte připojení k internetu.';
+      status.className = 'status error';
+    }
+    return;
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+  const $ = id => document.getElementById(id);
+  const deepClone = value => JSON.parse(JSON.stringify(value));
+
+  function mergeTransportConfig(base, saved) {
+    return {
+      ...base,
+      ...saved,
+      groups: { ...base.groups, ...(saved?.groups || {}) },
+      placeRules: { ...base.placeRules, ...(saved?.placeRules || {}) },
+      vehicles: Array.isArray(saved?.vehicles) ? saved.vehicles : base.vehicles
+    };
+  }
+  let transportConfig = deepClone(window.TRANSPORT_CONFIG || {});
+
+  // Mapování vozidel a pravidla přepravy se upravují na stránce Mapování přepravy
+  // a sdílí se pro všechny přes Firestore. Tady je čteme jen pro zobrazení výsledků
+  // (živě, ať se výsledky přepočítají, pokud někdo mapování zrovna upraví). Dokud
+  // se nepřipojí, appka běží s vestavěnými výchozími hodnotami z transport-config.js.
+  try {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js");
+    const { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc } =
+      await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
+
+    const app = initializeApp({
+      apiKey: "AIzaSyBX3Phi9CNQPjxYXMKil7exLrJ7ZbRUMbM",
+      authDomain: "kv-transport-mapping.firebaseapp.com",
+      projectId: "kv-transport-mapping",
+      storageBucket: "kv-transport-mapping.firebasestorage.app",
+      messagingSenderId: "144100896901",
+      appId: "1:144100896901:web:2ceef97e784e06385239ec"
+    }, "kvTransportMapping");
+    const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+    const transportConfigRef = doc(db, 'config', 'transport');
+
+    onSnapshot(transportConfigRef, snapshot => {
+      if (snapshot.exists()) {
+        transportConfig = mergeTransportConfig(deepClone(window.TRANSPORT_CONFIG || {}), snapshot.data());
+      } else {
+        setDoc(transportConfigRef, deepClone(window.TRANSPORT_CONFIG || {})).catch(err =>
+          console.error('Mapování přepravy: nepodařilo se založit počáteční data ve Firestore.', err));
+        return;
+      }
+      applyMappingToCurrentResults();
+    }, error => {
+      console.error('Mapování přepravy: chyba synchronizace s Firestore.', error);
+    });
+  } catch (err) {
+    console.error('Mapování přepravy: Firestore se nepodařilo načíst, používám vestavěné výchozí hodnoty.', err);
+  }
+
+  function findVehicleMapping(vehicle) {
+    const key = String(vehicle || '').trim().toLocaleUpperCase('cs-CZ');
+    return (transportConfig.vehicles || []).find(row => String(row.vehicle || '').trim().toLocaleUpperCase('cs-CZ') === key) || null;
+  }
+  function currentGroupLabel(key) {
+    return transportConfig.groups?.[key]?.label || (key === 'inside' ? 'Vnitřek' : 'Venek');
+  }
+  function compileLegalFormRegex() {
+    try { return new RegExp(transportConfig.placeRules?.legalFormAfterCommaPattern || '$a', 'i'); }
+    catch (_) { return /$a/; }
+  }
+  function escapeRegex(value) { return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function branchPrefixRegex() {
+    const prefix = String(transportConfig.placeRules?.branchPrefix || '').trim();
+    if (!prefix) return null;
+    const pieces = prefix.split(/\s+/).filter(Boolean).map(escapeRegex);
+    const flexible = pieces.join('\\s+').replace(/&/g, '\\s*&\\s*');
+    return new RegExp('^' + flexible + '\\s+(.+)$', 'i');
+  }
+  function vehicleSortRank(value) {
+    const text = String(value || '').trim();
+    if (/^\d+$/.test(text)) return { group: 0, number: Number(text), text };
+    const ex = text.match(/^EX(\d+)$/i);
+    if (ex) return { group: 1, number: Number(ex[1]), text };
+    return { group: 2, number: 0, text };
+  }
+
+  const state = { files: [], result: null };
+  const dropzone = $('dropzone');
+  const pageDropOverlay = $('pageDropOverlay');
+  const fileInput = $('fileInput');
+  const fileList = $('fileList');
+  const filesDetails = $('filesDetails');
+  const filesSummary = $('filesSummary');
+  const toolbar = $('toolbar');
+  const processBtn = $('processBtn');
+  const clearBtn = $('clearBtn');
+  const jsonBtn = $('jsonBtn');
+  const xlsxBtn = $('xlsxBtn');
+  const printBtn = $('printBtn');
+  const statusEl = $('status');
+  const warningsEl = $('warnings');
+  const resultsCard = $('resultsCard');
+  const resultsEl = $('results');
+
+  function setStatus(text, type = 'muted') {
+    statusEl.textContent = text;
+    statusEl.className = `status ${type}`;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function addFiles(fileLike) {
+    const incoming = Array.from(fileLike).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    const keys = new Set(state.files.map(f => `${f.name}|${f.size}|${f.lastModified}`));
+    for (const file of incoming) {
+      const key = `${file.name}|${file.size}|${file.lastModified}`;
+      if (!keys.has(key)) {
+        state.files.push(file);
+        keys.add(key);
+      }
+    }
+    renderFiles();
+  }
+
+  function renderFiles() {
+    fileList.innerHTML = state.files.map((f, i) => `
+      <li><span>${escapeHtml(f.name)} <span class="muted">(${Math.ceil(f.size/1024)} kB)</span></span>
+      <button class="btn danger" data-remove="${i}" type="button">Odebrat</button></li>
+    `).join('');
+    const any = state.files.length > 0;
+    processBtn.disabled = !any;
+    clearBtn.disabled = !any && !state.result;
+    filesDetails.hidden = !any;
+    filesSummary.textContent = `Nahrané soubory (${state.files.length})`;
+    if (any) {
+      filesDetails.open = true;
+      setStatus(`Vybráno souborů: ${state.files.length}`);
+    } else if (!state.result) setStatus('');
+  }
+
+  fileList.addEventListener('click', e => {
+    const button = e.target.closest('[data-remove]');
+    if (!button) return;
+    state.files.splice(Number(button.dataset.remove), 1);
+    renderFiles();
+  });
+
+  fileInput.addEventListener('change', () => {
+    addFiles(fileInput.files);
+    fileInput.value = '';
+  });
+  // PDF lze přetáhnout kamkoliv na stránku. Dokumentové handlery zároveň
+  // zabrání prohlížeči, aby upuštěné PDF otevřel místo aplikace.
+  let dragDepth = 0;
+  function hasFilesDrag(e) {
+    return Array.from(e.dataTransfer?.types || []).includes('Files');
+  }
+  function setGlobalDrag(active) {
+    document.body.classList.toggle('global-drag', active);
+    pageDropOverlay.classList.toggle('active', active);
+    pageDropOverlay.setAttribute('aria-hidden', active ? 'false' : 'true');
+    dropzone.classList.toggle('drag', active);
+  }
+  document.addEventListener('dragenter', e => {
+    if (!hasFilesDrag(e)) return;
+    e.preventDefault();
+    dragDepth += 1;
+    setGlobalDrag(true);
+  });
+  document.addEventListener('dragover', e => {
+    if (!hasFilesDrag(e)) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    setGlobalDrag(true);
+  });
+  document.addEventListener('dragleave', e => {
+    if (!hasFilesDrag(e)) return;
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) setGlobalDrag(false);
+  });
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    dragDepth = 0;
+    setGlobalDrag(false);
+    if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+  });
+  window.addEventListener('blur', () => {
+    dragDepth = 0;
+    setGlobalDrag(false);
+  });
+
+  // Jakmile uživatel použije nástrojovou lištu, seznam souborů se sbalí.
+  toolbar.addEventListener('click', e => {
+    if (e.target.closest('button') && !filesDetails.hidden) filesDetails.open = false;
+  });
+
+  clearBtn.addEventListener('click', () => {
+    state.files = [];
+    state.result = null;
+    warningsEl.innerHTML = '';
+    resultsEl.innerHTML = '';
+    resultsCard.hidden = true;
+    jsonBtn.disabled = xlsxBtn.disabled = printBtn.disabled = true;
+    renderFiles();
+  });
+
+  function centerX(w) { return (w.x0 + w.x1) / 2; }
+  function centerY(w) { return (w.y0 + w.y1) / 2; }
+
+  function textItemsToWords(items, pageHeight) {
+    const words = [];
+    for (const item of items) {
+      const raw = (item.str || '').trim();
+      if (!raw) continue;
+      const parts = raw.split(/\s+/).filter(Boolean);
+      const x0 = Number(item.transform?.[4] || 0);
+      const baselineY = Number(item.transform?.[5] || 0);
+      const topY = pageHeight - baselineY - Math.max(1, Number(item.height || 0));
+      const height = Math.max(1, Number(item.height || 8));
+      const totalWidth = Math.max(1, Number(item.width || raw.length * 4));
+      let cursor = x0;
+      const totalChars = parts.reduce((s,p) => s + p.length, 0) + Math.max(0, parts.length - 1);
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        const width = totalWidth * (p.length / Math.max(1, totalChars));
+        words.push({ x0: cursor, y0: topY, x1: cursor + width, y1: topY + height, text: p });
+        cursor += width + (parts.length > 1 ? totalWidth / totalChars : 0);
+      }
+    }
+    words.sort((a,b) => centerY(a) - centerY(b) || a.x0 - b.x0);
+    return words;
+  }
+
+  function extractTransportNumber(words) {
+    for (let i = 0; i < words.length - 2; i++) {
+      if (words[i].text.toLocaleLowerCase('cs-CZ') === 'přeprava' && words[i+1].text.toLocaleLowerCase('cs-CZ') === 'číslo:') {
+        const value = words[i+2].text.trim();
+        if (/^\d+$/.test(value)) return value;
+      }
+    }
+    throw new Error("Nepodařilo se najít 'Přeprava číslo'.");
+  }
+
+  function extractVehicle(words) {
+    const header = words.find(w => w.text.toLocaleLowerCase('cs-CZ') === 'vozidlo');
+    if (!header) throw new Error("Nepodařilo se najít hlavičku sloupce 'vozidlo'.");
+    const hx = centerX(header), hy = centerY(header);
+    const candidates = words
+      .filter(w => centerY(w) > hy + 4 && centerY(w) <= hy + 40 && Math.abs(centerX(w) - hx) <= 65)
+      .map(w => ({ score: Math.abs(centerX(w)-hx) + .35*Math.abs(centerY(w)-(hy+15)), w }))
+      .sort((a,b) => a.score - b.score);
+    if (!candidates.length) throw new Error("Nepodařilo se najít hodnotu ve sloupci 'vozidlo'.");
+    return candidates[0].w.text.trim();
+  }
+
+  function normalizeHeaderToken(text) {
+    return String(text || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('cs-CZ')
+      .replace(/[^a-z0-9]/g, '');
+  }
+
+  function median(values) {
+    if (!values.length) return null;
+    const sorted = [...values].sort((a,b) => a-b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
+  }
+
+  function findDetailHeader(words) {
+    const placeCandidates = words.filter(w => normalizeHeaderToken(w.text) === 'misto');
+    const contactCandidates = words.filter(w => normalizeHeaderToken(w.text) === 'kontakt');
+    const pairs = [];
+    for (const place of placeCandidates) {
+      for (const contact of contactCandidates) {
+        if (contact.x0 <= place.x0) continue;
+        const dy = Math.abs(centerY(place) - centerY(contact));
+        if (dy <= 4.5) pairs.push({ place, contact, dy, y: (centerY(place)+centerY(contact))/2 });
+      }
+    }
+    if (!pairs.length) throw new Error("Nepodařilo se najít společnou hlavičku tabulky 'Místo/Kontakt'.");
+
+    // V dokumentu může být slovo „Místo“ i v horním informačním bloku.
+    // Detailní tabulka je níže na stránce, proto bereme nejnižší platnou dvojici na stejné řádce.
+    pairs.sort((a,b) => b.y - a.y || a.dy - b.dy);
+    const { place, contact, y: headerY } = pairs[0];
+
+    const sameHeaderLine = words.filter(w => Math.abs(centerY(w) - headerY) <= 5);
+    const timeHeader = sameHeaderLine
+      .filter(w => {
+        const t = normalizeHeaderToken(w.text);
+        return (t === 'cas' || t === 'as') && centerX(w) < centerX(place);
+      })
+      .sort((a,b) => centerX(b) - centerX(a))[0] || null;
+
+    // Pokud font slovo Čas rozbije nebo zahodí první znak, opřeme levý sloupec o skutečné časy HH:MM.
+    const timeValueXs = words
+      .filter(w => centerY(w) > headerY + 4 && TIME_RE.test(w.text.trim()) && centerX(w) < centerX(place))
+      .map(centerX);
+    const timeCenter = timeHeader ? centerX(timeHeader) : median(timeValueXs);
+    if (timeCenter == null) throw new Error("Nepodařilo se určit sloupec 'Čas'.");
+
+    const placeCenter = centerX(place);
+    const contactCenter = centerX(contact);
+    const placeLeft = (timeCenter + placeCenter) / 2;
+    const placeRight = (placeCenter + contactCenter) / 2;
+
+    if (!(placeLeft < placeCenter && placeCenter < placeRight)) {
+      throw new Error("Nepodařilo se spolehlivě určit hranice sloupce 'Místo'.");
+    }
+    return { headerY, placeLeft, placeRight, timeCenter, placeCenter, contactCenter };
+  }
+
+  function groupByVisualLine(words, tolerance = 1.8) {
+    const ordered = [...words].sort((a,b) => centerY(a) - centerY(b) || a.x0 - b.x0);
+    const lines = [];
+    for (const w of ordered) {
+      const cy = centerY(w);
+      let line = lines.find(l => Math.abs(cy - l.y) <= tolerance);
+      if (!line) { line = { y: cy, words: [] }; lines.push(line); }
+      line.words.push(w);
+      line.y = line.words.reduce((s,x) => s + centerY(x), 0) / line.words.length;
+    }
+    for (const l of lines) l.words.sort((a,b) => a.x0 - b.x0);
+    return lines.sort((a,b) => a.y - b.y);
+  }
+
+  function normalizePlaceFirstLine(text) {
+    let t = text.replace(/\s+/g, ' ').trim();
+    if (!t) return t;
+    const prefixRx = branchPrefixRegex();
+    const branch = prefixRx ? t.match(prefixRx) : null;
+    if (branch) {
+      const branchName = branch[1].trim();
+      return transportConfig.placeRules?.emphasizeBranch === false ? branchName : `<strong>${branchName}</strong>`;
+    }
+    t = t.replace(compileLegalFormRegex(), '').trim();
+    return t;
+  }
+
+  function extractStops(words, inheritedLayout = null) {
+    // První stránka obvykle obsahuje hlavičku tabulky, pokračovací stránky už ne.
+    // Geometrii sloupců proto na první stránce odvodíme z hlavičky a na dalších
+    // stránkách ji pouze znovu použijeme. Tím pokračování přes zalomení stránky
+    // nepřijde o žádnou vykládku.
+    const localLayout = inheritedLayout || findDetailHeader(words);
+    const { placeLeft, placeRight, timeCenter } = localLayout;
+    const headerY = inheritedLayout ? -Infinity : localLayout.headerY;
+
+    // Text v PDF bývá centrovaný v buňce a PDF.js jej může rozdělit na několik
+    // samostatných objektů. Krátký začátek názvu (typicky první 1–2 znaky) tak
+    // může geometricky ležet těsně vlevo od matematického středu mezi sloupci.
+    // Proto nepoužíváme placeLeft jako tvrdý ořez. Levou hranici pro čtení
+    // odvozujeme dynamicky z mezery mezi středem sloupce Čas a hranicí Místo.
+    // Je to obecné pravidlo layoutu, nikoli seznam konkrétních poboček/názvů.
+    const placeScanLeft = timeCenter + (placeLeft - timeCenter) * 0.55;
+
+    const timeWords = words
+      .filter(w => centerY(w) > headerY + 5 && centerX(w) < placeLeft && TIME_RE.test(w.text.trim()))
+      .filter(w => Math.abs(centerX(w) - timeCenter) <= Math.max(28, placeLeft - timeCenter))
+      .sort((a,b) => centerY(a) - centerY(b));
+    if (!timeWords.length) throw new Error('V tabulce nebyly nalezeny žádné zastávky s časem HH:MM.');
+
+    const stops = [];
+    for (let i = 0; i < timeWords.length; i++) {
+      const tw = timeWords[i];
+      const ty = centerY(tw);
+
+      // Název zastávky začíná na stejné vizuální řádce jako čas.
+      // Používáme střed textového prvku a skutečné hranice sloupce odvozené z hlavičky,
+      // takže se do názvu nemůže přimíchat Kontakt ani Bal.
+      let sameRowWords = words.filter(w => {
+        const cy = centerY(w);
+        // PDF.js může vrátit celý textový úsek jako jeden široký objekt.
+        // Nesmíme rozhodovat podle jeho středu, protože by se první část názvu
+        // u levého okraje sloupce zahodila. Stačí, když textový box se sloupcem Místo překrývá.
+        const overlapsPlace = w.x1 > placeScanLeft && w.x0 < placeRight;
+        return Math.abs(cy - ty) <= 4.5 && overlapsPlace;
+      });
+
+      if (!sameRowWords.length) {
+        // Fallback pro PDF s mírně posunutou baseline: vezmeme nejbližší vizuální řádek
+        // uvnitř rozsahu aktuální zastávky, stále pouze ve sloupci Místo.
+        const startY = ty - 3.5;
+        const endY = i + 1 < timeWords.length ? centerY(timeWords[i+1]) - 3.5 : Infinity;
+        const rowWords = words.filter(w => {
+          const cy = centerY(w);
+          const overlapsPlace = w.x1 > placeScanLeft && w.x0 < placeRight;
+          return cy >= startY && cy < endY && overlapsPlace;
+        });
+        const lines = groupByVisualLine(rowWords, 2.4);
+        if (lines.length) {
+          lines.sort((a,b) => Math.abs(a.y - ty) - Math.abs(b.y - ty));
+          sameRowWords = lines[0].words;
+        }
+      }
+
+      // Čas je na stejné řádce, ale nesmí se dostat do názvu ani po rozšíření levé hranice.
+      sameRowWords = sameRowWords.filter(w => w !== tw && !TIME_RE.test(w.text.trim()));
+      sameRowWords.sort((a,b) => a.x0 - b.x0);
+      if (!sameRowWords.length) throw new Error(`U zastávky ${tw.text} chybí text ve sloupci Místo.`);
+      const firstLine = sameRowWords.map(w => w.text.trim()).join(' ').replace(/\s+/g, ' ').trim();
+
+      // Čistě číselný obsah je typický příznak chybně určeného sloupce (např. Bal.).
+      // Raději zpracování zastavíme, než abychom zobrazili věcně chybná data.
+      if (/^[\d\s.,+-]+$/.test(firstLine)) {
+        throw new Error(`U zastávky ${tw.text} byl místo názvu nalezen číselný obsah '${firstLine}'. Změnil se layout PDF.`);
+      }
+
+      const normalized = normalizePlaceFirstLine(firstLine);
+      if (!normalized) throw new Error(`U zastávky ${tw.text} vznikl prázdný název místa.`);
+      stops.push({ cas: tw.text.trim(), misto: normalized });
+    }
+    return stops.reverse();
+  }
+
+  async function parsePdf(file) {
+    const buffer = await file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+    if (!doc.numPages) throw new Error('PDF nemá žádnou stránku.');
+
+    let transportNumber = null, vehicle = null;
+    let detailLayout = null;
+    const chronological = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const viewport = page.getViewport({ scale: 1 });
+      const text = await page.getTextContent({ normalizeWhitespace: true, disableCombineTextItems: false });
+      const words = textItemsToWords(text.items, viewport.height);
+      if (p === 1) {
+        transportNumber = extractTransportNumber(words);
+        vehicle = extractVehicle(words);
+        detailLayout = findDetailHeader(words);
+      }
+      try {
+        // Na stránce 1 používáme její vlastní hlavičku; na dalších stránkách
+        // pokračujeme se stejnou geometrií sloupců, i když se hlavička tabulky neopakuje.
+        const pageStopsReverse = extractStops(words, p === 1 ? null : detailLayout);
+        chronological.push(...pageStopsReverse.slice().reverse());
+      } catch (err) {
+        // Prázdná pokračovací stránka je v pořádku. Pokud ale obsahuje časové řádky,
+        // nesmíme chybu tiše spolknout — jinak bychom část trasy ztratili.
+        const hasLikelyStops = words.some(w => TIME_RE.test(w.text.trim()) && centerX(w) < (detailLayout?.placeLeft ?? Infinity));
+        if (hasLikelyStops || !/hlavičku tabulky|žádné zastávky/.test(String(err.message))) throw err;
+      }
+    }
+    if (!chronological.length) throw new Error('V dokumentu nebyly nalezeny žádné zastávky.');
+    const vehicleMapping = findVehicleMapping(vehicle);
+    const carNumber = vehicleMapping?.carNumber ?? null;
+    const result = {
+      fileName: file.name,
+      data: {
+        cisloAuta: carNumber,
+        spz: vehicle,
+        cisloPrepravy: transportNumber,
+        vykladky: chronological.slice().reverse()
+      }
+    };
+    if (carNumber == null) result.warnings = [`Vozidlo '${vehicle}' není v číselníku; číslo auta je prázdné.`];
+    return result;
+  }
+
+  function compareByCarNumberThenName(a, b) {
+    const aCar = String(a?.data?.cisloAuta ?? '').trim();
+    const bCar = String(b?.data?.cisloAuta ?? '').trim();
+
+    const ar = vehicleSortRank(aCar);
+    const br = vehicleSortRank(bCar);
+
+    // 1) čistá čísla 1..n
+    // 2) EX1..EXn
+    // 3) vše ostatní abecedně podle názvu v prvním sloupci
+    if (ar.group !== br.group) return ar.group - br.group;
+    if (ar.group === 0 || ar.group === 1) {
+      const numberDiff = ar.number - br.number;
+      if (numberDiff !== 0) return numberDiff;
+    } else {
+      const textDiff = ar.text.localeCompare(br.text, 'cs-CZ', { numeric: true, sensitivity: 'base' });
+      if (textDiff !== 0) return textDiff;
+    }
+
+    const spzDiff = String(a?.data?.spz ?? '').localeCompare(String(b?.data?.spz ?? ''), 'cs-CZ', { numeric: true, sensitivity: 'base' });
+    if (spzDiff !== 0) return spzDiff;
+    return String(a?.data?.cisloPrepravy ?? '').localeCompare(String(b?.data?.cisloPrepravy ?? ''), 'cs-CZ', { numeric: true, sensitivity: 'base' });
+  }
+
+  function groupResults(processed) {
+    const groupA = [], groupB = [];
+    for (const item of processed) {
+      const mapping = findVehicleMapping(item?.data?.spz);
+      (mapping?.group === 'inside' ? groupA : groupB).push(item);
+    }
+    groupA.sort(compareByCarNumberThenName);
+    groupB.sort(compareByCarNumberThenName);
+    return { groupA, groupB };
+  }
+
+  function stripTags(text) { return String(text ?? '').replace(/<[^>]+>/g, ''); }
+
+  function renderGroup(items, title) {
+    if (!items.length) return '';
+    const maxStops = Math.max(0, ...items.map(x => x.data.vykladky?.length || 0));
+    const stopHeaders = Array.from({ length: maxStops }, (_, i) => `<th>${i+1}.</th>`).join('');
+    const rows = items.map(item => {
+      const d = item.data;
+      const stops = Array.from({ length: maxStops }, (_, i) => `<td>${d.vykladky[i]?.misto || '—'}</td>`).join('');
+      return `<tr><td>${escapeHtml(d.cisloAuta ?? '—')}</td><td>${escapeHtml(d.spz ?? '—')}</td><td>${escapeHtml(d.cisloPrepravy ?? '—')}</td>${stops}</tr>`;
+    }).join('');
+    return `<div class="section-title"><h2>${escapeHtml(title)}</h2></div>
+      <div class="table-wrap"><table class="result-table"><thead><tr><th>Číslo auta</th><th>SPZ</th><th>Bouda</th>${stopHeaders}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  function renderResult(result) {
+    const grouped = groupResults(result.processedPdfs);
+    resultsEl.innerHTML = renderGroup(grouped.groupA, currentGroupLabel('inside')) + renderGroup(grouped.groupB, currentGroupLabel('outside'));
+    if (!result.processedPdfs.length) resultsEl.innerHTML = '<div class="empty">Nebyl zpracován žádný soubor.</div>';
+    const warns = result.processedPdfs.flatMap(x => x.warnings || []);
+    warningsEl.innerHTML = warns.map(w => `<div class="warning">${escapeHtml(w)}</div>`).join('');
+    resultsCard.hidden = false;
+    jsonBtn.disabled = xlsxBtn.disabled = printBtn.disabled = result.processedPdfs.length === 0;
+  }
+
+  function applyMappingToCurrentResults() {
+    if (!state.result?.processedPdfs) return;
+    for (const item of state.result.processedPdfs) {
+      const mapping = findVehicleMapping(item.data.spz);
+      item.data.cisloAuta = mapping?.carNumber ?? null;
+      item.warnings = mapping ? [] : [`Vozidlo '${item.data.spz}' není v mapování; číslo auta je prázdné.`];
+    }
+    renderResult(state.result);
+  }
+
+  processBtn.addEventListener('click', async () => {
+    processBtn.disabled = true;
+    clearBtn.disabled = true;
+    warningsEl.innerHTML = '';
+    setStatus('Zpracovávám PDF…');
+    const processedPdfs = [], errors = [];
+    for (let i = 0; i < state.files.length; i++) {
+      const file = state.files[i];
+      setStatus(`Zpracovávám ${i+1}/${state.files.length}: ${file.name}`);
+      try { processedPdfs.push(await parsePdf(file)); }
+      catch (err) { errors.push({ fileName: file.name, error: err?.message || String(err) }); }
+    }
+    state.result = {
+      processedPdfs,
+      errors,
+      message: errors.length ? `Zpracováno ${processedPdfs.length} souborů, chyb ${errors.length}.` : 'Všechny soubory úspěšně zpracovány.'
+    };
+    renderResult(state.result);
+    if (errors.length) {
+      setStatus(state.result.message, 'error');
+      warningsEl.innerHTML += errors.map(e => `<div class="warning"><strong>${escapeHtml(e.fileName)}</strong>: ${escapeHtml(e.error)}</div>`).join('');
+    } else setStatus(state.result.message, 'ok');
+    processBtn.disabled = state.files.length === 0;
+    clearBtn.disabled = false;
+  });
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  jsonBtn.addEventListener('click', () => {
+    if (!state.result) return;
+    const grouped = groupResults(state.result.processedPdfs);
+    downloadBlob(new Blob([JSON.stringify({ ...state.result, ...grouped }, null, 2)], { type:'application/json;charset=utf-8' }), `prepravy-${new Date().toISOString().slice(0,10)}.json`);
+  });
+
+  xlsxBtn.addEventListener('click', () => {
+    if (!state.result || !window.XLSX) {
+      alert('Excel knihovna není načtena. Zkontrolujte připojení k internetu.');
+      return;
+    }
+    const grouped = groupResults(state.result.processedPdfs);
+    const wb = XLSX.utils.book_new();
+    const appendGroupSheet = (items, sheetName) => {
+      const maxStops = Math.max(0, ...items.map(x => x.data.vykladky?.length || 0));
+      const header = ['Číslo auta','SPZ','Bouda', ...Array.from({length:maxStops}, (_,i) => `${i+1}.`)];
+      const rows = items.map(item => {
+        const d = item.data;
+        const stops = (d.vykladky || []).map(x => stripTags(x.misto));
+        while (stops.length < maxStops) stops.push('—');
+        return [d.cisloAuta ?? '', d.spz ?? '', d.cisloPrepravy ?? '', ...stops];
+      });
+      const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    };
+    appendGroupSheet(grouped.groupA, currentGroupLabel('inside').slice(0,31));
+    appendGroupSheet(grouped.groupB, currentGroupLabel('outside').slice(0,31));
+    XLSX.writeFile(wb, `vykladky-${new Date().toISOString().slice(0,10)}.xlsx`);
+  });
+
+  printBtn.addEventListener('click', () => window.print());
+  renderFiles();
+})();
