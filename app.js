@@ -1,4 +1,4 @@
-(() => {
+(async () => {
       'use strict';
 
       if (!window.pdfjsLib) {
@@ -11,27 +11,69 @@
       }
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-      const CONFIG_STORAGE_KEY = 'kve.transport.mapping.v1';
       const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
       const $ = id => document.getElementById(id);
       const deepClone = value => JSON.parse(JSON.stringify(value));
 
-      function loadTransportConfig() {
-        const base = deepClone(window.TRANSPORT_CONFIG || {});
-        try {
-          const raw = localStorage.getItem(CONFIG_STORAGE_KEY);
-          if (!raw) return base;
-          const saved = JSON.parse(raw);
-          return {
-            ...base,
-            ...saved,
-            groups: { ...base.groups, ...(saved.groups || {}) },
-            placeRules: { ...base.placeRules, ...(saved.placeRules || {}) },
-            vehicles: Array.isArray(saved.vehicles) ? saved.vehicles : base.vehicles
-          };
-        } catch (_) { return base; }
+      function mergeTransportConfig(base, saved) {
+        return {
+          ...base,
+          ...saved,
+          groups: { ...base.groups, ...(saved?.groups || {}) },
+          placeRules: { ...base.placeRules, ...(saved?.placeRules || {}) },
+          vehicles: Array.isArray(saved?.vehicles) ? saved.vehicles : base.vehicles
+        };
       }
-      let transportConfig = loadTransportConfig();
+      let transportConfig = deepClone(window.TRANSPORT_CONFIG || {});
+
+      // Mapování vozidel a pravidla přepravy jsou sdílená pro všechny přes Firestore
+      // (samostatný Firebase projekt, odděleně od dat přítomností). Dokud se
+      // nepřipojí, appka běží s vestavěnými výchozími hodnotami z transport-config.js.
+      let transportConfigRef = null;
+      let firestoreSetDoc = null;
+      try {
+        const TRANSPORT_FIREBASE_CONFIG = {
+          apiKey: "AIzaSyBX3Phi9CNQPjxYXMKil7exLrJ7ZbRUMbM",
+          authDomain: "kv-transport-mapping.firebaseapp.com",
+          projectId: "kv-transport-mapping",
+          storageBucket: "kv-transport-mapping.firebasestorage.app",
+          messagingSenderId: "144100896901",
+          appId: "1:144100896901:web:2ceef97e784e06385239ec"
+        };
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js");
+        const {
+          initializeFirestore,
+          persistentLocalCache,
+          persistentMultipleTabManager,
+          doc,
+          onSnapshot,
+          setDoc
+        } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
+
+        const transportFirebaseApp = initializeApp(TRANSPORT_FIREBASE_CONFIG, 'transportMapping');
+        const transportDb = initializeFirestore(transportFirebaseApp, {
+          localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        });
+        transportConfigRef = doc(transportDb, 'config', 'transport');
+        firestoreSetDoc = setDoc;
+
+        onSnapshot(transportConfigRef, snapshot => {
+          if (snapshot.exists()) {
+            transportConfig = mergeTransportConfig(deepClone(window.TRANSPORT_CONFIG || {}), snapshot.data());
+          } else {
+            // První spuštění vůbec: založ sdílený dokument z vestavěných výchozích hodnot.
+            setDoc(transportConfigRef, deepClone(window.TRANSPORT_CONFIG || {})).catch(err =>
+              console.error('Mapování přepravy: nepodařilo se založit počáteční data ve Firestore.', err));
+            return;
+          }
+          renderMappingEditor();
+          applyMappingToCurrentResults();
+        }, error => {
+          console.error('Mapování přepravy: chyba synchronizace s Firestore.', error);
+        });
+      } catch (err) {
+        console.error('Mapování přepravy: Firestore se nepodařilo načíst, používám vestavěné výchozí hodnoty.', err);
+      }
 
       function findVehicleMapping(vehicle) {
         const key = String(vehicle || '').trim().toLocaleUpperCase('cs-CZ');
@@ -245,31 +287,57 @@
         btn.closest('tr')?.remove();
         vehicleDirty=true; saveVehicleMappingsBtn.disabled=false; vehicleMappingStatus.textContent='';
       });
-      saveVehicleMappingsBtn.addEventListener('click', () => {
+      saveVehicleMappingsBtn.addEventListener('click', async () => {
+        if (!transportConfigRef) {
+          vehicleMappingStatus.textContent='Nelze uložit: spojení s databází není dostupné.';
+          vehicleMappingStatus.style.color='var(--danger)';
+          return;
+        }
         try {
-          transportConfig={...transportConfig,vehicles:sortVehicles(collectVehicles())};
-          localStorage.setItem(CONFIG_STORAGE_KEY,JSON.stringify(transportConfig));
+          const nextConfig={...transportConfig,vehicles:sortVehicles(collectVehicles())};
+          saveVehicleMappingsBtn.disabled=true;
+          await firestoreSetDoc(transportConfigRef, nextConfig);
+          transportConfig=nextConfig;
           vehicleDirty=false;
           applyMappingToCurrentResults();
           renderMappingEditor();
-          vehicleMappingStatus.textContent='Změny vozidel byly uloženy.';
-        } catch(err) { vehicleMappingStatus.textContent=err?.message||String(err); vehicleMappingStatus.style.color='var(--danger)'; }
+          vehicleMappingStatus.textContent='Změny vozidel byly uloženy pro všechny.';
+          vehicleMappingStatus.style.color='';
+        } catch(err) {
+          vehicleMappingStatus.textContent=err?.message||String(err);
+          vehicleMappingStatus.style.color='var(--danger)';
+          renderMappingEditor();
+        }
       });
       [insideLabelInput,outsideLabelInput,branchPrefixInput,emphasizeBranchInput].forEach(el => {
         el.addEventListener('input', () => { rulesDirty=true; saveTransportRulesBtn.disabled=false; transportRulesStatus.textContent=''; });
         el.addEventListener('change', () => { rulesDirty=true; saveTransportRulesBtn.disabled=false; transportRulesStatus.textContent=''; });
       });
-      saveTransportRulesBtn.addEventListener('click', () => {
-        transportConfig={
-          ...transportConfig,
-          groups:{inside:{label:insideLabelInput.value.trim()||'Vnitřek'},outside:{label:outsideLabelInput.value.trim()||'Venek'}},
-          placeRules:{...transportConfig.placeRules,branchPrefix:branchPrefixInput.value.trim()||'K & V',emphasizeBranch:emphasizeBranchInput.checked}
-        };
-        localStorage.setItem(CONFIG_STORAGE_KEY,JSON.stringify(transportConfig));
-        rulesDirty=false;
-        applyMappingToCurrentResults();
-        renderMappingEditor();
-        transportRulesStatus.textContent='Pravidla přepravy byla uložena.';
+      saveTransportRulesBtn.addEventListener('click', async () => {
+        if (!transportConfigRef) {
+          transportRulesStatus.textContent='Nelze uložit: spojení s databází není dostupné.';
+          transportRulesStatus.style.color='var(--danger)';
+          return;
+        }
+        try {
+          const nextConfig={
+            ...transportConfig,
+            groups:{inside:{label:insideLabelInput.value.trim()||'Vnitřek'},outside:{label:outsideLabelInput.value.trim()||'Venek'}},
+            placeRules:{...transportConfig.placeRules,branchPrefix:branchPrefixInput.value.trim()||'K & V',emphasizeBranch:emphasizeBranchInput.checked}
+          };
+          saveTransportRulesBtn.disabled=true;
+          await firestoreSetDoc(transportConfigRef, nextConfig);
+          transportConfig=nextConfig;
+          rulesDirty=false;
+          applyMappingToCurrentResults();
+          renderMappingEditor();
+          transportRulesStatus.textContent='Pravidla přepravy byla uložena pro všechny.';
+          transportRulesStatus.style.color='';
+        } catch(err) {
+          transportRulesStatus.textContent=err?.message||String(err);
+          transportRulesStatus.style.color='var(--danger)';
+          renderMappingEditor();
+        }
       });
       window.addEventListener('beforeunload', e => {
         if (!hasUnsavedMappingChanges()) return;
