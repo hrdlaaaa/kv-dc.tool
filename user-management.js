@@ -12,16 +12,43 @@
       query,
       orderBy,
       getDocsFromCache,
-      getDocsFromServer
+      getDocsFromServer,
+      doc,
+      onSnapshot,
+      setDoc
     } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
+
+    // app.js i tento soubor potřebují Firestore ve stejném kv-transport-mapping projektu
+    // (mapování vozidel, resp. anotace uživatelů). Otevřít k němu z jedné stránky dvě
+    // samostatná připojení současně vede k nedeterministické "permission-denied" chybě
+    // při startu, proto si obě sdílí jedno společné přes window.
+    function connectSharedKvTransportMappingFirestore() {
+      if (!window.__kvTransportMappingFirestorePromise) {
+        window.__kvTransportMappingFirestorePromise = (async () => {
+          const { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } =
+            await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
+          const app = initializeApp({
+            apiKey: "AIzaSyBX3Phi9CNQPjxYXMKil7exLrJ7ZbRUMbM",
+            authDomain: "kv-transport-mapping.firebaseapp.com",
+            projectId: "kv-transport-mapping",
+            storageBucket: "kv-transport-mapping.firebasestorage.app",
+            messagingSenderId: "144100896901",
+            appId: "1:144100896901:web:2ceef97e784e06385239ec"
+          }, "kvTransportMapping");
+          return initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+        })();
+      }
+      return window.__kvTransportMappingFirestorePromise;
+    }
 
     const ROOT_ORG_CODE = "110700000";
     const ORG_RANGE_END = "110800000";
     const COLLECTION_NAME = "okbase_absences_by_person";
-    const LOCAL_KEY = "kve.user-management.v1";
     const LAST_SERVER_REFRESH_KEY = "kve.user-management.last-server-refresh.v1";
     const AUTO_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
     const LEGACY_DATA_CACHE_KEY = "kve.user-management.data.v1";
+    const LEGACY_LOCAL_STATE_KEY = "kve.user-management.v1";
+    const ANNOTATIONS_COLLECTION_NAME = "userAnnotations";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCaanEUktq1zw_kQszcVT5kfTK81SEq68Q",
@@ -50,7 +77,7 @@
     const refreshButton = document.getElementById("refreshUserManagementBtn");
     if (!body || !status || !page || !refreshButton) throw new Error("Správa uživatelů nemá připravené prvky stránky.");
 
-    let localState = loadLocalState();
+    let localState = {};
     let people = [];
     let allRows = [];
     let loadedOnce = false;
@@ -65,6 +92,26 @@
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
     const usersQuery = query(collection(db, COLLECTION_NAME), orderBy("osobaId", "asc"));
+
+    // Email/kontrola/docházkový bonus jsou anotace nad konkrétními lidmi, ale ukládáme
+    // je do stejného sdíleného kv-transport-mapping připojení jako mapování přepravy
+    // (odděleně od dat o přítomnosti), aby se sdílely živě pro všechny stejným způsobem.
+    const annotationsDb = await connectSharedKvTransportMappingFirestore();
+    const annotationsCollectionRef = collection(annotationsDb, ANNOTATIONS_COLLECTION_NAME);
+    const annotationDocId = id => encodeURIComponent(id);
+
+    onSnapshot(annotationsCollectionRef, snapshot => {
+      const next = {};
+      snapshot.forEach(docSnap => { next[decodeURIComponent(docSnap.id)] = docSnap.data(); });
+      localState = next;
+      renderFilteredRows();
+    }, error => {
+      console.error("Anotace uživatelů (email/kontrola/bonus): chyba synchronizace s Firestore.", error);
+    });
+
+    // Stará čistě lokální data z předchozí verze appky (než se anotace přesunuly
+    // do Firestore) už dál nepoužíváme.
+    try { localStorage.removeItem(LEGACY_LOCAL_STATE_KEY); } catch (_) {}
 
     // Starou vlastní datovou cache už nepoužíváme. Firestore má vlastní persistentní IndexedDB cache.
     try { localStorage.removeItem(LEGACY_DATA_CACHE_KEY); } catch (_) {}
@@ -558,15 +605,6 @@
     function escapeHtml(value) {
       return String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
     }
-    function loadLocalState() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}");
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch (_) { return {}; }
-    }
-    function saveLocalState() {
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(localState));
-    }
     function getRowId(target) {
       return target.closest("tr[data-user-id]")?.dataset.userId || "";
     }
@@ -585,10 +623,12 @@
       const key = control ? "control" : "bonus";
       const value = !(stateFor(id)[key] === true);
       stateFor(id)[key] = value;
-      saveLocalState();
       button.classList.toggle("on", value);
       button.setAttribute("aria-pressed", value ? "true" : "false");
       if (filters[key]) renderFilteredRows();
+      setDoc(doc(annotationsCollectionRef, annotationDocId(id)), { [key]: value }, { merge: true }).catch(error => {
+        console.error("Nepodařilo se uložit změnu do Firestore.", error);
+      });
     });
 
     body.addEventListener("change", event => {
@@ -596,9 +636,12 @@
       if (!input) return;
       const id = getRowId(input);
       if (!id) return;
-      stateFor(id).email = input.value.trim();
-      saveLocalState();
+      const email = input.value.trim();
+      stateFor(id).email = email;
       if (filters.email) renderFilteredRows();
+      setDoc(doc(annotationsCollectionRef, annotationDocId(id)), { email }, { merge: true }).catch(error => {
+        console.error("Nepodařilo se uložit email do Firestore.", error);
+      });
     });
 
     document.querySelectorAll("[data-user-filter]").forEach(control => {

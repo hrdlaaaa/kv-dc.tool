@@ -15,6 +15,30 @@
       const $ = id => document.getElementById(id);
       const deepClone = value => JSON.parse(JSON.stringify(value));
 
+      // app.js i user-management.js potřebují Firestore ve stejném kv-transport-mapping
+      // projektu (mapování vozidel, resp. anotace uživatelů). Otevřít k němu z jedné
+      // stránky dvě samostatná persistentní připojení současně vede k nedeterministické
+      // "permission-denied" chybě při startu, proto si obě sdílí jedno společné přes window.
+      function connectSharedKvTransportMappingFirestore() {
+        if (!window.__kvTransportMappingFirestorePromise) {
+          window.__kvTransportMappingFirestorePromise = (async () => {
+            const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js");
+            const { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } =
+              await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
+            const app = initializeApp({
+              apiKey: "AIzaSyBX3Phi9CNQPjxYXMKil7exLrJ7ZbRUMbM",
+              authDomain: "kv-transport-mapping.firebaseapp.com",
+              projectId: "kv-transport-mapping",
+              storageBucket: "kv-transport-mapping.firebasestorage.app",
+              messagingSenderId: "144100896901",
+              appId: "1:144100896901:web:2ceef97e784e06385239ec"
+            }, "kvTransportMapping");
+            return initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+          })();
+        }
+        return window.__kvTransportMappingFirestorePromise;
+      }
+
       function mergeTransportConfig(base, saved) {
         return {
           ...base,
@@ -32,28 +56,8 @@
       let transportConfigRef = null;
       let firestoreSetDoc = null;
       try {
-        const TRANSPORT_FIREBASE_CONFIG = {
-          apiKey: "AIzaSyBX3Phi9CNQPjxYXMKil7exLrJ7ZbRUMbM",
-          authDomain: "kv-transport-mapping.firebaseapp.com",
-          projectId: "kv-transport-mapping",
-          storageBucket: "kv-transport-mapping.firebasestorage.app",
-          messagingSenderId: "144100896901",
-          appId: "1:144100896901:web:2ceef97e784e06385239ec"
-        };
-        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js");
-        const {
-          initializeFirestore,
-          persistentLocalCache,
-          persistentMultipleTabManager,
-          doc,
-          onSnapshot,
-          setDoc
-        } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
-
-        const transportFirebaseApp = initializeApp(TRANSPORT_FIREBASE_CONFIG, 'transportMapping');
-        const transportDb = initializeFirestore(transportFirebaseApp, {
-          localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-        });
+        const transportDb = await connectSharedKvTransportMappingFirestore();
+        const { doc, onSnapshot, setDoc } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
         transportConfigRef = doc(transportDb, 'config', 'transport');
         firestoreSetDoc = setDoc;
 
