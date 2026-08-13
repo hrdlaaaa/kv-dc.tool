@@ -1,6 +1,10 @@
 (function () {
   'use strict';
 
+  if (new URLSearchParams(location.search).get('embedded') === '1') {
+    document.body.classList.add('embedded-view');
+  }
+
   const config = window.PRESENCE_CONFIG;
   if (!config) { console.error('presence.js: chybí window.PRESENCE_CONFIG.'); return; }
 
