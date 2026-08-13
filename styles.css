@@ -241,6 +241,8 @@
     .btn.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
     .btn.primary:hover:not(:disabled) { background: var(--navy-2); border-color: var(--navy-2); }
     .btn.danger { color: var(--danger); background: #fff; }
+    .btn.btn-secondary { background: #fff; color: var(--navy); border-color: #c8d3e3; }
+    .btn.btn-secondary:hover:not(:disabled) { background: #f4f6f9; }
     .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
     .choose-btn { white-space: nowrap; background: #fff; color: var(--navy); border-color: #c8d3e3; }
     .file-list { margin: 0; padding: 7px 9px 9px; list-style: none; }
