@@ -99,7 +99,8 @@
 
     // Kontrola a docházkový bonus musí mít v databázi vždy explicitní true/false pro
     // každého, kdo je aktuálně v seznamu (ne chybějící záznam), noví lidé se doplní
-    // automaticky, a komu ze seznamu zmizí, se v databázi nastaví na false.
+    // automaticky (bonus výchozí zapnutý pro skladníky, jinak vypnutý), a komu ze
+    // seznamu zmizí, se v databázi nastaví na false.
     function reconcileAnnotations() {
       if (!peopleRenderedOnce) return;
       const currentIds = new Set(allRows.map(row => row.id));
@@ -108,7 +109,7 @@
         const saved = localState[row.id] || {};
         const patch = {};
         if (typeof saved.control !== "boolean") patch.control = false;
-        if (typeof saved.bonus !== "boolean") patch.bonus = false;
+        if (typeof saved.bonus !== "boolean") patch.bonus = normalize(row.place) === "skladnik";
         if (Object.keys(patch).length) {
           setDoc(doc(annotationsCollectionRef, annotationDocId(row.id)), patch, { merge: true }).catch(error => {
             console.error(`Nepodařilo se založit výchozí anotaci pro uživatele ${row.id}.`, error);
