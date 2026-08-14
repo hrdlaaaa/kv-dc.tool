@@ -351,8 +351,8 @@
         return {
           id,
           name: getPersonName(person),
-          place: text(person.mistoNazev),
-          department: text(person.orgParentNazev),
+          place: text(person.orgStructure?.mistoNazev),
+          department: text(person.orgjNazev),
           manager: getManagerName(person, source, orgLeaders),
           shift: getShift(person),
           email: getEmail(person),

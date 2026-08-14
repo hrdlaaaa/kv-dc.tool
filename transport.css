@@ -256,7 +256,103 @@ body.global-drag .dropzone { border-color: var(--navy); background: #eef3fb; }
 .result-table tbody tr:hover { background: #eef3fa; }
 .empty { color: var(--muted); padding: 14px 0; }
 
+@page {
+  size: A4 landscape;
+  margin: 8mm;
+}
+
 @media print {
-  .table-wrap { overflow: visible; }
-  .result-table { box-shadow: none; border-color: #bbb; }
+  html, body {
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff;
+  }
+  body::before, .no-print, .app-header, .sidebar { display: none !important; }
+  .content-area { margin-left: 0 !important; min-height: 0 !important; width: 100% !important; }
+  .shell { width: 100% !important; max-width: none !important; min-height: 0 !important; margin: 0 auto !important; padding: 0 !important; }
+  .panel, .results-panel {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  /* Každá skupina (Vnitřek/Venek) na vlastní tiskovou stránku, svisle vystředěná.
+     190mm místo teoretických 194mm je záměrná rezerva proti tomu, aby zaokrouhlení
+     prohlížeče neposunulo jinak jednostránkovou tabulku na prázdnou stránku navíc. */
+  .print-table-section {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 190mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+  .print-table-section + .print-table-section {
+    break-before: page;
+    page-break-before: always;
+  }
+  .section-title {
+    margin: 0 0 3mm !important;
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+  .section-title::before { height: 5mm; width: 1.2mm; }
+  .section-title h2 { font-size: 11pt !important; }
+  .table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+  .result-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border-color: #777 !important;
+    font-size: 7pt !important;
+  }
+  .result-table th, .result-table td {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 1.4mm .8mm !important;
+    line-height: 1.12 !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    hyphens: auto !important;
+  }
+  .result-table th:nth-child(1), .result-table td:nth-child(1),
+  .result-table th:nth-child(2), .result-table td:nth-child(2),
+  .result-table th:nth-child(3), .result-table td:nth-child(3) {
+    width: auto !important;
+  }
+  .result-table thead { display: table-header-group; }
+  .result-table tr { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Vynutit přesné barvy pozadí při tisku - prohlížeč to v tiskovém dialogu
+     může stále přebít, pokud to tak uživatel nastaví. */
+  #resultsCard, #resultsCard * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }

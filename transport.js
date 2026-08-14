@@ -520,8 +520,8 @@
       const stops = Array.from({ length: maxStops }, (_, i) => `<td>${d.vykladky[i]?.misto || '—'}</td>`).join('');
       return `<tr><td>${escapeHtml(d.cisloAuta ?? '—')}</td><td>${escapeHtml(d.spz ?? '—')}</td><td>${escapeHtml(d.cisloPrepravy ?? '—')}</td>${stops}</tr>`;
     }).join('');
-    return `<div class="section-title"><h2>${escapeHtml(title)}</h2></div>
-      <div class="table-wrap"><table class="result-table"><thead><tr><th>Číslo auta</th><th>SPZ</th><th>Bouda</th>${stopHeaders}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    return `<section class="print-table-section"><div class="section-title"><h2>${escapeHtml(title)}</h2></div>
+      <div class="table-wrap"><table class="result-table"><thead><tr><th>Číslo auta</th><th>SPZ</th><th>Bouda</th>${stopHeaders}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
   }
 
   function renderResult(result) {

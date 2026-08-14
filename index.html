@@ -3,73 +3,51 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Přeprava | K&amp;V ELEKTRO</title>
+  <title>Domů | K&amp;V ELEKTRO</title>
   <link rel="stylesheet" href="./base.css">
-  <link rel="stylesheet" href="./transport.css">
+  <link rel="stylesheet" href="./domu.css">
 </head>
 <body>
-  <div id="pageDropOverlay" class="page-drop-overlay" aria-hidden="true">
-    <div class="page-drop-overlay__box">
-      <div class="page-drop-overlay__title">Pusťte PDF kamkoliv na stránku</div>
-      <div class="page-drop-overlay__sub">Soubory se přidají do seznamu k dalšímu zpracování.</div>
-    </div>
-  </div>
-
   <header class="app-header no-print">
     <div class="header-row">
       <div class="header-brand">
         <div class="brand"><img class="brand-logo" src="./kve-logo.png" alt="K&V ELEKTRO"></div>
-        <div class="page-title">Přeprava</div>
+        <div class="page-title">Domů</div>
       </div>
-
-      <div class="header-center">
-        <div class="header-upload">
-          <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Nahrát PDF soubory">
-            <div class="upload-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M5 20h14"></path></svg>
-            </div>
-            <div class="dropzone-copy"><div class="dropzone-title">Přetáhnout PDF</div><div class="dropzone-subtitle">Nebo soubory vyberte ručně.</div></div>
-            <label class="btn choose-btn" for="fileInput">Vybrat</label>
-            <input id="fileInput" type="file" accept="application/pdf,.pdf" multiple>
-          </div>
-        </div>
-
-        <div id="toolbar" class="header-actions">
-          <button id="processBtn" class="btn primary" disabled>Zpracovat</button>
-          <button id="clearBtn" class="btn" disabled>Vyčistit</button>
-          <button id="jsonBtn" class="btn" disabled>JSON</button>
-          <button id="xlsxBtn" class="btn" disabled>Excel</button>
-          <button id="printBtn" class="btn" disabled>Tisk</button>
-        </div>
-
-        <div class="header-files">
-          <details id="filesDetails" class="files-details" open hidden>
-            <summary id="filesSummary">Soubory (0)</summary>
-            <ul id="fileList" class="file-list"></ul>
-          </details>
-        </div>
-      </div>
-
-      <div class="header-status"><div id="status" class="status"></div></div>
-      <div id="transportHeaderWarnings"><div id="warnings"></div></div>
     </div>
   </header>
 
   <div class="app-layout">
     <aside class="sidebar no-print" aria-label="Hlavní navigace">
-      <div class="sidebar-title">Přeprava</div>
       <nav class="sidebar-nav">
+        <div class="sidebar-section-title">Hlavní</div>
         <a href="./index.html" class="sidebar-link active" aria-current="page">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+          </span>
+          <span class="sidebar-label">Domů</span>
+        </a>
+        <a href="./preprava.html" class="sidebar-link">
           <span class="sidebar-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
           </span>
           <span class="sidebar-label">Přeprava</span>
         </a>
+
+        <div class="sidebar-section-title">Sklad a logistika</div>
         <a href="./mapovani-prepravy.html" class="sidebar-link">
           <span class="sidebar-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
           </span>
           <span class="sidebar-label">Mapování přepravy</span>
+        </a>
+
+        <div class="sidebar-section-title">Uživatelé</div>
+        <a href="./sprava-uzivatelu.html" class="sidebar-link">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><path d="M3 19c0-3 2-5 5-5s5 2 5 5"/><path d="M16 8h5M18.5 5.5v5"/><path d="M15 15h6M15 19h6"/></svg>
+          </span>
+          <span class="sidebar-label">Správa uživatelů</span>
         </a>
         <a href="./pritomnosti.html" class="sidebar-link">
           <span class="sidebar-icon" aria-hidden="true">
@@ -77,27 +55,179 @@
           </span>
           <span class="sidebar-label">Přítomnosti</span>
         </a>
-        <a href="./sprava-uzivatelu.html" class="sidebar-link">
-          <span class="sidebar-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><path d="M3 19c0-3 2-5 5-5s5 2 5 5"/><path d="M16 8h5M18.5 5.5v5"/><path d="M15 15h6M15 19h6"/></svg>
-          </span>
-          <span class="sidebar-label">Správa uživatelů</span>
-        </a>
       </nav>
     </aside>
 
     <div class="content-area">
       <main class="shell">
-        <section id="resultsCard" class="panel results-panel" hidden>
-          <div id="results"></div>
+        <section id="homePage" class="home-page">
+          <section class="home-welcome" aria-label="Dnešní informace">
+            <div>
+              <h1 id="homeGreetingText">Dobrý den.</h1>
+              <p id="homeDateText">Načítám dnešní datum…</p>
+            </div>
+            <div id="homeWeatherText" class="home-weather" hidden></div>
+          </section>
+
+          <section class="panel home-presence-panel">
+            <div class="home-presence-head">
+              <div class="home-presence-title-wrap">
+                <h1>Přítomnost lidí</h1>
+                <span class="home-beta-badge">BETA</span>
+              </div>
+              <div class="home-presence-menu-wrap">
+                <button id="homePresenceMenuBtn" type="button" class="home-presence-menu-btn" aria-label="Menu přítomnosti" aria-expanded="false">⋯</button>
+                <div id="homePresenceMenu" class="home-presence-menu" hidden>
+                  <div class="home-presence-menu-meta">
+                    <div><strong>Přítomnost:</strong> <span id="homePresenceUpdated">—</span></div>
+                    <div><strong>Dovolené:</strong> <span id="homeVacationUpdated">—</span></div>
+                  </div>
+                  <button id="homeDepartmentFilterBtn" type="button" class="home-presence-filter-link">⚙ <span>Filtr oddělení</span></button>
+                </div>
+              </div>
+            </div>
+            <div class="home-presence-stats">
+              <button type="button" class="home-presence-stat present" data-home-presence-status="present"><span>Přítomní</span><strong id="homePresencePresent">0</strong></button>
+              <button type="button" class="home-presence-stat break" data-home-presence-status="break"><span>Přestávka</span><strong id="homePresenceBreak">0</strong></button>
+              <button type="button" class="home-presence-stat absent" data-home-presence-status="absent"><span>Nepřítomní</span><strong id="homePresenceAbsent">0</strong></button>
+              <button type="button" class="home-presence-stat sick" data-home-presence-status="sick"><span>Nemocní</span><strong id="homePresenceSick">0</strong></button>
+              <button type="button" class="home-presence-stat vacation" data-home-presence-status="vacation"><span>Dovolená (schváleno)</span><strong id="homePresenceVacation">0</strong></button>
+            </div>
+          </section>
+
+          <div class="home-grid">
+            <section class="panel home-todos-panel">
+              <div class="home-card-head">
+                <div>
+                  <h1>Seznam úkolů</h1>
+                </div>
+                <span id="homeOpenCount" class="home-count-badge">Otevřené: 0</span>
+              </div>
+
+              <button id="homeAddTaskToggle" type="button" class="home-add-task-toggle">
+                <span aria-hidden="true">＋</span> Přidat úkol
+              </button>
+
+              <form id="homeTaskForm" class="home-task-form" hidden>
+                <div class="home-task-form-grid">
+                  <input id="homeTaskText" class="home-input" type="text" placeholder="Název úkolu" autocomplete="off" required>
+                  <input id="homeTaskDueDate" class="home-input" type="date">
+                  <select id="homeTaskPriority" class="home-input">
+                    <option value="">Priorita: Bez priority</option>
+                    <option value="low">Priorita: Nízká</option>
+                    <option value="medium">Priorita: Střední</option>
+                    <option value="high">Priorita: Vysoká</option>
+                  </select>
+                  <div class="home-task-form-actions">
+                    <button id="homeTaskNoteToggle" type="button" class="btn btn-secondary">Poznámka</button>
+                    <button type="submit" class="btn primary">Uložit</button>
+                  </div>
+                </div>
+                <textarea id="homeTaskNote" class="home-input home-task-note" rows="3" placeholder="Poznámka (volitelné)" hidden></textarea>
+              </form>
+
+              <div class="home-task-section">
+                <div class="home-section-title"><span>Rozpracované</span><span id="homeOpenSectionCount">0</span></div>
+                <div id="homeOpenTasks" class="home-task-list"></div>
+              </div>
+
+              <div class="home-task-section home-done-section">
+                <button id="homeDoneToggle" type="button" class="home-done-toggle" aria-expanded="false">
+                  <span id="homeDoneChevron" aria-hidden="true">›</span> <span id="homeDoneLabel">Hotové úkoly (0)</span>
+                </button>
+                <div id="homeDoneTasks" class="home-task-list" hidden></div>
+              </div>
+            </section>
+
+            <section class="panel home-controls-panel">
+              <div class="home-card-head">
+                <div>
+                  <h1>Přehled kontrol</h1>
+                  <p>Kolo štěstí zatím není v této aplikaci k dispozici.</p>
+                </div>
+                <span id="homeControlsCount" class="home-count-badge">Celkem: 0</span>
+              </div>
+              <div id="homeControlsList" class="home-controls-list"></div>
+            </section>
+          </div>
         </section>
       </main>
     </div>
   </div>
 
-  <script src="./transport-config.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="./transport.js"></script>
+  <div id="homeWeatherPermissionModal" class="home-weather-permission-modal" hidden aria-hidden="true">
+    <div class="home-weather-permission-backdrop" data-home-weather-permission-close></div>
+    <div class="home-weather-permission-dialog" role="dialog" aria-modal="true" aria-labelledby="homeWeatherPermissionTitle">
+      <div class="home-weather-permission-header">
+        <h2 id="homeWeatherPermissionTitle">Povolit polohu pro počasí</h2>
+        <button id="homeWeatherPermissionClose" type="button" class="home-weather-permission-x" aria-label="Zavřít">×</button>
+      </div>
+      <div class="home-weather-permission-body">
+        <p id="homeWeatherPermissionMessage">Poloha se používá pouze k zobrazení aktuálního počasí pro tvoje místo. Povol prosím přístup k poloze.</p>
+        <div class="home-weather-permission-actions">
+          <button id="homeWeatherPermissionLater" type="button" class="btn">Teď ne</button>
+          <button id="homeWeatherPermissionAllow" type="button" class="btn primary">Povolit polohu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="homePresencePeopleModal" class="home-presence-people-modal" hidden aria-hidden="true">
+    <div class="home-presence-people-backdrop" data-home-presence-people-close></div>
+    <div class="home-presence-people-dialog" role="dialog" aria-modal="true" aria-labelledby="homePresencePeopleTitle">
+      <div class="home-presence-people-header">
+        <h2 id="homePresencePeopleTitle">Přítomní</h2>
+        <button type="button" class="home-presence-people-x" data-home-presence-people-close aria-label="Zavřít">×</button>
+      </div>
+      <div id="homePresencePeopleList" class="home-presence-people-list"></div>
+    </div>
+  </div>
+
+  <div id="homeDepartmentModal" class="home-department-modal" hidden aria-hidden="true">
+    <div class="home-department-backdrop" data-home-department-close></div>
+    <div class="home-department-dialog" role="dialog" aria-modal="true" aria-labelledby="homeDepartmentModalTitle">
+      <div class="home-department-header">
+        <h2 id="homeDepartmentModalTitle">Filtr oddělení</h2>
+        <button type="button" class="home-department-x" data-home-department-close aria-label="Zavřít">×</button>
+      </div>
+      <div class="home-department-body">
+        <div class="home-department-actions">
+          <button id="homeDepartmentSelectAll" type="button" class="btn btn-secondary">Vybrat vše</button>
+          <button id="homeDepartmentClear" type="button" class="btn btn-secondary">Zrušit výběr</button>
+        </div>
+        <div id="homeDepartmentList" class="home-department-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="homeTaskModal" class="home-task-modal" hidden aria-hidden="true">
+    <div class="home-task-modal-backdrop" data-home-task-close></div>
+    <div class="home-task-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="homeTaskModalTitle">
+      <div class="home-task-modal-header">
+        <h2 id="homeTaskModalTitle">Detail úkolu</h2>
+        <button class="home-task-modal-x" type="button" data-home-task-close aria-label="Zavřít">×</button>
+      </div>
+      <form id="homeTaskEditForm" class="home-task-modal-body">
+        <input id="homeEditTaskText" class="home-input" type="text" placeholder="Název úkolu" required>
+        <input id="homeEditTaskDueDate" class="home-input" type="date">
+        <select id="homeEditTaskPriority" class="home-input">
+          <option value="">Priorita: Bez priority</option>
+          <option value="low">Priorita: Nízká</option>
+          <option value="medium">Priorita: Střední</option>
+          <option value="high">Priorita: Vysoká</option>
+        </select>
+        <textarea id="homeEditTaskNote" class="home-input home-task-note" rows="4" placeholder="Poznámka (volitelné)"></textarea>
+        <div class="home-task-modal-actions">
+          <button id="homeDeleteTaskBtn" type="button" class="btn danger">Smazat</button>
+          <div>
+            <button type="button" class="btn btn-secondary" data-home-task-close>Zavřít</button>
+            <button type="submit" class="btn primary">Uložit</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./domu.js"></script>
 </body>
 </html>
