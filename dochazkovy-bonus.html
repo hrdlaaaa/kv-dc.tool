@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Přítomnosti | K&amp;V ELEKTRO</title>
+  <title>Docházkový bonus | K&amp;V ELEKTRO</title>
   <link rel="stylesheet" href="./base.css">
-  <link rel="stylesheet" href="./presence-hub.css">
+  <link rel="stylesheet" href="./dochazkovy-bonus.css">
 </head>
 <body>
   <header class="app-header no-print">
     <div class="header-row">
       <div class="header-brand">
         <div class="brand"><img class="brand-logo" src="./kve-logo.png" alt="K&V ELEKTRO"></div>
-        <div class="page-title">Přítomnosti</div>
+        <div class="page-title">Docházkový bonus</div>
       </div>
     </div>
   </header>
@@ -67,13 +67,13 @@
           </span>
           <span class="sidebar-label">Správa uživatelů</span>
         </a>
-        <a href="./pritomnosti.html" class="sidebar-link active" aria-current="page">
+        <a href="./pritomnosti.html" class="sidebar-link">
           <span class="sidebar-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-3 2-5 5-5s5 2 5 5"/><circle cx="17" cy="9" r="2"/><path d="M15 14c3 0 5 2 5 5"/></svg>
           </span>
           <span class="sidebar-label">Přítomnosti</span>
         </a>
-        <a href="./dochazkovy-bonus.html" class="sidebar-link">
+        <a href="./dochazkovy-bonus.html" class="sidebar-link active" aria-current="page">
           <span class="sidebar-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16"/><path d="M6 16V8"/><path d="M10 16V5"/><path d="M14 16v-4"/><path d="M18 16V7"/></svg>
           </span>
@@ -84,25 +84,72 @@
 
     <div class="content-area">
       <main class="shell">
-        <section class="dashboard-page presence-page">
-          <div class="presence-toolbar no-print">
-            <label for="presenceVariant">Přehled</label>
-            <select id="presenceVariant" class="presence-select">
-              <option value="">Vyberte přehled</option>
-              <option value="prijem">Příjem</option>
-              <option value="vydej">Výdej</option>
-              <option value="kabely">Kabely</option>
-            </select>
-          </div>
-          <div id="presenceStage" class="presence-stage">
-            <div id="presencePlaceholder" class="presence-placeholder">Vyberte Příjem, Výdej nebo Kabely.</div>
-            <iframe id="presenceFrame" class="presence-frame" title="Přehled přítomnosti" hidden></iframe>
+        <section id="bonusPage" class="bonus-page">
+          <div class="panel bonus-panel">
+            <div class="bonus-head">
+              <div>
+                <h1 id="bonusHeading">Docházkový bonus - Sklad</h1>
+                <p>Přehled čtvrtletních odměn skladníků s filtrováním a exportem.</p>
+              </div>
+              <div class="bonus-head-actions">
+                <button id="bonusSettingsBtn" class="btn" type="button">Nastavení</button>
+                <button id="bonusExportBtn" class="btn primary" type="button">Excel</button>
+              </div>
+            </div>
+
+            <div class="bonus-summary">
+              <div class="bonus-summary-box"><span>K vyplacení celkem</span><strong id="bonusTotalPayout">0 Kč</strong></div>
+              <div class="bonus-summary-box"><span>Procentuální úspěšnost</span><strong id="bonusSuccessRate">0%</strong></div>
+              <div class="bonus-summary-box"><span>Počet lidí s nulou</span><strong id="bonusZeroPeople" class="bonus-danger">0</strong></div>
+              <div class="bonus-summary-box"><span>Počet lidí</span><strong id="bonusPeopleCount">0</strong></div>
+            </div>
+
+            <div class="bonus-filters">
+              <input id="bonusSearch" type="search" placeholder="Hledat jméno...">
+              <select id="bonusDepartmentFilter"><option value="">Všechna oddělení</option></select>
+              <select id="bonusManagerFilter"><option value="">Všichni vedoucí</option></select>
+            </div>
+
+            <div class="bonus-table-wrap">
+              <table class="bonus-table">
+                <thead><tr><th>Jméno</th><th>Pozice</th><th>Oddělení</th><th>Vedoucí</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Celkem</th></tr></thead>
+                <tbody id="bonusTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
       </main>
     </div>
   </div>
 
-  <script src="./presence-hub.js"></script>
+  <div id="bonusChangeModal" class="bonus-modal" hidden aria-hidden="true">
+    <div class="bonus-modal-backdrop" data-bonus-modal-close></div>
+    <div class="bonus-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="bonusChangeTitle">
+      <div class="bonus-modal-header"><h2 id="bonusChangeTitle">Potvrzení změny</h2><button type="button" class="bonus-modal-x" data-bonus-modal-close>×</button></div>
+      <div class="bonus-modal-content">
+        <p>Pro změnu částky prosím zadejte poznámku.</p>
+        <textarea id="bonusChangeReason" rows="3" placeholder="Důvod změny..."></textarea>
+        <div class="bonus-modal-actions"><button class="btn" type="button" data-bonus-modal-close>Zrušit</button><button id="bonusSaveChangeBtn" class="btn primary" type="button">Uložit změnu</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bonusSettingsModal" class="bonus-modal" hidden aria-hidden="true">
+    <div class="bonus-modal-backdrop" data-bonus-modal-close></div>
+    <div class="bonus-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="bonusSettingsTitle">
+      <div class="bonus-modal-header"><h2 id="bonusSettingsTitle">Nastavení</h2><button type="button" class="bonus-modal-x" data-bonus-modal-close>×</button></div>
+      <div class="bonus-modal-content">
+        <label class="bonus-settings-field"><span>Celková roční částka odměny (Kč)</span><input id="bonusTotalAmount" type="number" min="0" step="1"></label>
+        <div class="bonus-help">Tato částka se rovnoměrně rozpočítá do 4 čtvrtletí.</div>
+        <label class="bonus-check"><input id="bonusOverwriteExisting" type="checkbox"> Aktualizovat i již uložené odměny</label>
+        <div class="bonus-help warning">Všechny odměny, které nejsou 0, budou přepsány na novou částku. Nulové odměny a poznámky zůstanou zachovány.</div>
+        <div class="bonus-modal-actions"><button class="btn" type="button" data-bonus-modal-close>Zrušit</button><button id="bonusSaveSettingsBtn" class="btn primary" type="button">Uložit nastavení</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./bonus-seed-data.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="./dochazkovy-bonus.js"></script>
 </body>
 </html>
