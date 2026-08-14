@@ -457,6 +457,12 @@
       const latitude = Number(position.coords.latitude);
       const longitude = Number(position.coords.longitude);
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+      // Poloha je v tuto chvíli už schválená - zavři popup hned, ať uživatel
+      // nečeká na dvě navazující síťová volání (počasí + název místa).
+      saveWeatherLocation(position);
+      closeWeatherPermissionModal();
+
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}&current=temperature_2m,apparent_temperature,weather_code&timezone=auto`;
       const response = await fetch(url);
       if (!response.ok) return;
@@ -520,8 +526,6 @@
       contentEl.appendChild(valueRow);
       weatherText.append(iconEl, contentEl);
       weatherText.hidden = false;
-      saveWeatherLocation(position);
-      closeWeatherPermissionModal();
     } catch (_) {}
   }
 
