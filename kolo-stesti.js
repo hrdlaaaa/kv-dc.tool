@@ -87,9 +87,11 @@
     if (resetBtn) {
       const group = resetBtn.dataset.wheelMappingReset || '';
       if (!group) return;
+      const removedUsers = Object.keys(userMapping).filter(userId => userMapping[userId] === group);
       Object.keys(userMapping).forEach(userId => {
         if (userMapping[userId] === group) delete userMapping[userId];
       });
+      window.KVEAudit?.logChange({ module: 'Kolo štěstí', action: 'Reset mapování směny', entity: MAPPING_GROUPS.find(item => item.key === group)?.label || group, field: 'Uživatelé', oldValue: removedUsers, newValue: [] });
       saveUserMapping();
       renderMappingModal();
       render();
@@ -100,8 +102,11 @@
     const userId = checkbox.dataset.userId || '';
     const group = checkbox.dataset.group || '';
     if (!userId || !group) return;
+    const oldGroup = userMapping[userId] || '';
     if (checkbox.checked) userMapping[userId] = group;
     else if (userMapping[userId] === group) delete userMapping[userId];
+    const userName = rows.find(row => row.id === userId)?.name || userId;
+    window.KVEAudit?.logChange({ module: 'Kolo štěstí', action: 'Změna mapování uživatele', entity: userName, field: 'Směna', oldValue: oldGroup || 'Nezařazen', newValue: userMapping[userId] || 'Nezařazen' });
     saveUserMapping();
     renderMappingModal();
     render();
@@ -114,11 +119,13 @@
     const role = select.dataset.wheelRole || '';
     if (!rowKey || !role) return;
     const record = getRecord(rowKey);
+    const oldRoleValue = record[role] || '';
     record[role] = select.value;
     if (record.controller && record.witness && record.controller === record.witness) {
       if (role === 'controller') record.witness = '';
       else record.controller = '';
     }
+    window.KVEAudit?.logChange({ module: 'Kolo štěstí', action: 'Změna role kontroly', entity: rowKey, field: role === 'controller' ? 'Kontrolor' : 'Svědek', oldValue: oldRoleValue || '—', newValue: record[role] || '—' });
     saveRow(rowKey);
     render();
   });
@@ -453,7 +460,10 @@
     if (!record) return;
     record.results = { ...(record.results || {}) };
     Object.keys(resultDraft).forEach(name => {
-      record.results[name] = { ...defaultPersonResult(), ...resultDraft[name] };
+      const oldResult = { ...defaultPersonResult(), ...(record.results[name] || {}) };
+      const newResult = { ...defaultPersonResult(), ...resultDraft[name] };
+      record.results[name] = newResult;
+      window.KVEAudit?.logDiff('Kolo štěstí', 'Uložení výsledku kontroly', `${activeResultRowKey} – ${name}`, oldResult, newResult, ['kontrola', 'skrinka', 'batoh', 'vysledek', 'poznamka']);
     });
     saveRow(activeResultRowKey);
     closeResultModal();
@@ -570,8 +580,9 @@
     });
   }
 
-  function drawPeople(rowKey, dateText, shiftKey) {
+  function drawPeople(rowKey, dateText, shiftKey, silent = false) {
     const record = getRecord(rowKey);
+    const oldNames = Array.isArray(record.names) ? record.names.slice() : [];
     let eligible;
 
     if (Array.isArray(record.eligibleUserIds) && record.eligibleUserIds.length) {
@@ -596,6 +607,11 @@
       return nextName;
     }).filter(Boolean);
 
+    // Automatické losování na pozadí (autoDrawPendingRows) se do historie
+    // změn nezaznamenává - jde o tichou výchozí akci, ne rozhodnutí člověka.
+    if (!silent) {
+      window.KVEAudit?.logChange({ module: 'Kolo štěstí', action: oldNames.length ? 'Nové losování' : 'Losování', entity: `${dateText} / ${shiftKey}`, field: 'Vylosovaní uživatelé', oldValue: oldNames, newValue: record.names });
+    }
     saveRow(rowKey);
     render();
   }
@@ -622,7 +638,7 @@
         if (!eligible.length) continue;
         autoDrawInFlight.add(rowKey);
         try {
-          drawPeople(rowKey, dateText, shift.key);
+          drawPeople(rowKey, dateText, shift.key, true);
         } finally {
           autoDrawInFlight.delete(rowKey);
         }

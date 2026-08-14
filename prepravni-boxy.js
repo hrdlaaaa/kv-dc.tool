@@ -2,7 +2,6 @@
   'use strict';
 
   const HISTORY_PAGE_SIZE = 10;
-  const ACTOR_KEY = 'kve.actor.local.v1';
   const BASE = window.KVE_BOX_BASE_DATA || { frames: [], history: [] };
   const $ = id => document.getElementById(id);
   const page = $('boxesPage');
@@ -56,36 +55,15 @@
   function normalizeCode(value) { return String(value ?? '').trim().replace(/\s+/g, '').toUpperCase(); }
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
 
-  function loadActorName() {
-    try { return localStorage.getItem(ACTOR_KEY) || ''; } catch (_) { return ''; }
-  }
-  function saveActorName(name) {
-    try { localStorage.setItem(ACTOR_KEY, name); } catch (_) {}
-  }
-  function ensureActorName() {
-    let name = loadActorName();
-    if (!name) {
-      try {
-        name = (prompt('Jak se jmenuješ? Jméno se přidá k záznamům v historii boxů.') || '').trim();
-      } catch (_) {
-        name = '';
-      }
-      if (name) saveActorName(name);
-    }
-    return name || 'Neznámý uživatel';
-  }
   function renderActor() {
-    actorNameEl.textContent = loadActorName() || 'Neznámý uživatel';
+    const actor = window.KVEAudit?.getActor?.();
+    actorNameEl.textContent = actor?.name || 'Neznámý uživatel';
   }
-  actorChangeBtn.addEventListener('click', () => {
-    let name = '';
-    try {
-      name = (prompt('Jak se jmenuješ?', loadActorName()) || '').trim();
-    } catch (_) {
-      name = '';
-    }
-    if (name) { saveActorName(name); renderActor(); }
+  actorChangeBtn.addEventListener('click', async () => {
+    await window.KVEAudit?.chooseActor?.();
+    renderActor();
   });
+  window.addEventListener('kve:audit-actor-changed', renderActor);
 
   function findFrame(code) { return frames.find(frame => frame.frame_code === normalizeCode(code)) || null; }
   function activeFrames() { return frames.filter(frame => !frame.archived); }
@@ -129,6 +107,7 @@
 
   async function writeHistory(frame, action) {
     const now = new Date().toISOString();
+    const actor = await window.KVEAudit?.ensureActor?.('Přepravní boxy');
     await firestoreAddDoc(historyRef, {
       frame_code: frame.frame_code,
       frame_name: frame.name,
@@ -137,8 +116,8 @@
       note: frame.note || '',
       status: frame.status,
       created_at: now,
-      actor_name: ensureActorName(),
-      actor_email: null
+      actor_name: actor?.name || 'Neznámý uživatel',
+      actor_email: actor?.email || null
     });
     historyPage = 1;
   }

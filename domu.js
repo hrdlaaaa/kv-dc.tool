@@ -129,6 +129,7 @@
       updatedAt: now
     };
     tasks.unshift(newTask);
+    window.KVEAudit?.logChange({ module: 'Domů', action: 'Přidání úkolu', entity: newTask.text, field: 'Úkol', oldValue: '—', newValue: newTask });
     saveTasks();
     taskForm.reset();
     taskNote.hidden = true;
@@ -149,8 +150,10 @@
       event.stopPropagation();
       const task = tasks.find(item => item.id === toggleDone.dataset.homeTaskToggle);
       if (!task) return;
+      const oldDone = task.done;
       task.done = !task.done;
       task.updatedAt = new Date().toISOString();
+      window.KVEAudit?.logChange({ module: 'Domů', action: 'Změna stavu úkolu', entity: task.text, field: 'Hotovo', oldValue: oldDone, newValue: task.done });
       saveTasks();
       renderTasks();
       return;
@@ -181,11 +184,13 @@
     if (!task) return;
     const text = editText.value.trim();
     if (!text) return;
+    const oldTask = { ...task };
     task.text = text;
     task.dueDate = editDueDate.value || '';
     task.priority = editPriority.value || '';
     task.note = editNote.value.trim();
     task.updatedAt = new Date().toISOString();
+    window.KVEAudit?.logDiff('Domů', 'Úprava úkolu', oldTask.text || task.id, oldTask, task, ['text', 'dueDate', 'priority', 'note']);
     saveTasks();
     closeTaskModal();
     renderTasks();
@@ -194,7 +199,9 @@
   deleteBtn.addEventListener('click', () => {
     if (!editingId) return;
     if (!confirm('Opravdu smazat tento úkol?')) return;
+    const deletedTask = tasks.find(item => item.id === editingId);
     tasks = tasks.filter(item => item.id !== editingId);
+    if (deletedTask) window.KVEAudit?.logChange({ module: 'Domů', action: 'Smazání úkolu', entity: deletedTask.text, field: 'Úkol', oldValue: deletedTask, newValue: 'Smazáno' });
     saveTasks();
     closeTaskModal();
     renderTasks();
@@ -844,7 +851,9 @@
     const lookup = new Map(tasks.map(item => [item.id, item]));
     const other = tasks.filter(item => item.done !== done);
     const reordered = sectionIds.map(id => lookup.get(id)).filter(Boolean);
+    const oldOrder = sectionIds.slice();
     tasks = done ? [...other, ...reordered] : [...reordered, ...other];
+    window.KVEAudit?.logChange({ module: 'Domů', action: 'Změna pořadí úkolů', entity: done ? 'Hotové úkoly' : 'Rozpracované úkoly', field: 'Pořadí', oldValue: oldOrder, newValue: reordered.map(item => item.id) });
     saveTasks();
     renderTasks();
   }

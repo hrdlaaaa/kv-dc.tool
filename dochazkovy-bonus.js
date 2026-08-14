@@ -192,6 +192,7 @@
     const stamp = `[${new Date().toLocaleString('cs-CZ')}]`;
     const next = { ...current, [quarter]: target, [`${quarter}_note`]: `${reason} ${stamp}` };
     payments[user.id] = next;
+    window.KVEAudit?.logChange({ module: 'Docházkový bonus', action: 'Změna odměny', entity: user.jmeno || user.id, field: quarter.toUpperCase(), oldValue: Number(current[quarter] || 0), newValue: target, detail: reason });
     firestoreSetDoc(firestoreDoc(paymentsRef, paymentDocId(user.id)), next).catch(error => {
       console.error('dochazkovy-bonus.js: nepodařilo se uložit změnu odměny.', error);
     });
@@ -204,7 +205,9 @@
     if (!settingsDocRef) return;
     const value = Number(totalAmountInput.value);
     if (!Number.isFinite(value) || value < 0) return;
+    const oldTotalAmount = totalAmount;
     totalAmount = value;
+    window.KVEAudit?.logChange({ module: 'Docházkový bonus', action: 'Změna nastavení', entity: 'Roční částka odměny', field: 'Celková částka', oldValue: oldTotalAmount, newValue: value });
     firestoreSetDoc(settingsDocRef, { totalAmount: value }).catch(error => {
       console.error('dochazkovy-bonus.js: nepodařilo se uložit nastavení.', error);
     });
@@ -215,8 +218,10 @@
         let changed = false;
         ['q1', 'q2', 'q3', 'q4'].forEach(q => {
           if (Number(current[q]) > 0 && Number(current[q]) !== value / 4) {
+            const oldQuarter = Number(current[q]);
             next[q] = value / 4;
             changed = true;
+            window.KVEAudit?.logChange({ module: 'Docházkový bonus', action: 'Hromadná změna odměny', entity: user.jmeno || user.id, field: q.toUpperCase(), oldValue: oldQuarter, newValue: next[q] });
           }
         });
         if (changed) {

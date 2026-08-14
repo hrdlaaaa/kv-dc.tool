@@ -184,6 +184,8 @@
       created_at: old?.created_at || now,
       updated_at: now
     };
+    if (old) window.KVEAudit?.logDiff('Čtečky', 'Úprava čtečky', item.sn || item.id, old, item, ['cislo', 'sn', 'ip', 'oddeleni', 'typ', 'stav', 'poznamka', 'inventura_dne', 'servis_od', 'ticket']);
+    else window.KVEAudit?.logChange({ module: 'Čtečky', action: 'Přidání čtečky', entity: item.sn || item.id, field: 'záznam', oldValue: '—', newValue: item });
     await firestoreSetDoc(firestoreDoc(readersRef, item.id), item);
     closeModal();
   }
@@ -191,7 +193,9 @@
   async function toggleRetired(id) {
     const row = rows.find(r => r.id === id);
     if (!row || !readersRef) return;
-    const next = { ...row, vyrazeno: !(row.vyrazeno === true), updated_at: new Date().toISOString() };
+    const oldValue = row.vyrazeno === true;
+    const next = { ...row, vyrazeno: !oldValue, updated_at: new Date().toISOString() };
+    window.KVEAudit?.logChange({ module: 'Čtečky', action: next.vyrazeno ? 'Vyřazení čtečky' : 'Vrácení čtečky', entity: next.sn || next.id, field: 'vyrazeno', oldValue, newValue: next.vyrazeno });
     await firestoreSetDoc(firestoreDoc(readersRef, id), next);
     closeModal();
   }

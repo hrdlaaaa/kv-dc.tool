@@ -639,11 +639,14 @@
       const id = getRowId(button);
       if (!id) return;
       const key = control ? "control" : "bonus";
-      const value = !(stateFor(id)[key] === true);
+      const row = allRows.find(item => item.id === id);
+      const currentValue = stateFor(id)[key] === true;
+      const value = !currentValue;
       stateFor(id)[key] = value;
       button.classList.toggle("on", value);
       button.setAttribute("aria-pressed", value ? "true" : "false");
       if (filters[key]) renderFilteredRows();
+      window.KVEAudit?.logChange({ module: "Správa uživatelů", action: "Změna nastavení uživatele", entity: row?.name || id, field: key === "control" ? "Kontrola" : "Docházkový bonus", oldValue: currentValue, newValue: value });
       setDoc(doc(annotationsCollectionRef, annotationDocId(id)), { [key]: value }, { merge: true }).catch(error => {
         console.error("Nepodařilo se uložit změnu do Firestore.", error);
       });
@@ -654,9 +657,12 @@
       if (!input) return;
       const id = getRowId(input);
       if (!id) return;
+      const row = allRows.find(item => item.id === id);
+      const oldEmail = stateFor(id).email || '';
       const email = input.value.trim();
       stateFor(id).email = email;
       if (filters.email) renderFilteredRows();
+      window.KVEAudit?.logChange({ module: "Správa uživatelů", action: "Změna e-mailu", entity: row?.name || id, field: "Email", oldValue: oldEmail, newValue: email });
       setDoc(doc(annotationsCollectionRef, annotationDocId(id)), { email }, { merge: true }).catch(error => {
         console.error("Nepodařilo se uložit email do Firestore.", error);
       });

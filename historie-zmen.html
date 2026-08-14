@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Správa uživatelů | K&amp;V ELEKTRO</title>
+  <title>Historie změn | K&amp;V ELEKTRO</title>
   <link rel="stylesheet" href="./base.css">
-  <link rel="stylesheet" href="./user-management.css">
+  <link rel="stylesheet" href="./historie-zmen.css">
 </head>
 <body>
   <header class="app-header no-print">
     <div class="header-row">
       <div class="header-brand">
         <div class="brand"><img class="brand-logo" src="./kve-logo.png" alt="K&V ELEKTRO"></div>
-        <div class="page-title">Správa uživatelů</div>
+        <div class="page-title">Historie změn</div>
       </div>
     </div>
   </header>
@@ -61,7 +61,7 @@
         </a>
 
         <div class="sidebar-section-title">Uživatelé</div>
-        <a href="./sprava-uzivatelu.html" class="sidebar-link active" aria-current="page">
+        <a href="./sprava-uzivatelu.html" class="sidebar-link">
           <span class="sidebar-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><path d="M3 19c0-3 2-5 5-5s5 2 5 5"/><path d="M16 8h5M18.5 5.5v5"/><path d="M15 15h6M15 19h6"/></svg>
           </span>
@@ -81,7 +81,7 @@
         </a>
 
         <div class="sidebar-section-title">Audit</div>
-        <a href="./historie-zmen.html" class="sidebar-link">
+        <a href="./historie-zmen.html" class="sidebar-link active" aria-current="page">
           <span class="sidebar-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h4"/><path d="m15 16 2 2 3-4"/></svg>
           </span>
@@ -92,54 +92,26 @@
 
     <div class="content-area">
       <main class="shell">
-        <section class="dashboard-page">
-          <div class="panel user-management-panel">
-            <div class="user-management-head">
-              <h1>Správa uživatelů</h1>
-              <div class="user-management-head-actions">
-                <button id="refreshUserManagementBtn" class="btn btn-secondary user-management-refresh" type="button">Aktualizovat uživatele</button>
-                <div id="userManagementStatus" class="user-management-status">Připraveno</div>
+        <section id="auditPage" class="audit-page">
+          <div class="panel audit-panel">
+            <div class="audit-head">
+              <div>
+                <h1>Historie změn</h1>
+                <p>Audit uživatelských změn v aplikaci. Přepravní boxy nejsou zahrnuté, protože mají vlastní historii.</p>
+              </div>
+              <div class="audit-head-actions">
+                <button id="auditActorButton" class="audit-actor-button" type="button" title="Změnit aktivního uživatele pro audit"><span>Aktivní uživatel:</span><strong>Není vybrán</strong></button>
+                <span id="auditCount" class="audit-count">0 záznamů</span>
               </div>
             </div>
-            <div class="user-management-table-wrap">
-              <table class="user-management-table">
-                <thead>
-                  <tr class="user-management-columns">
-                    <th>Jméno</th>
-                    <th>Místo</th>
-                    <th>Oddělení</th>
-                    <th>Nadřízený</th>
-                    <th>Směna</th>
-                    <th>Email</th>
-                    <th>Telefon</th>
-                    <th class="center-col">Kontrola</th>
-                    <th class="center-col">Docházkový bonus</th>
-                  </tr>
-                  <tr class="user-management-filters">
-                    <th><input type="search" data-user-filter="name" aria-label="Filtrovat podle jména" placeholder="Filtrovat"></th>
-                    <th><select data-user-filter="place" aria-label="Filtrovat podle místa"><option value="">Vše</option></select></th>
-                    <th><select data-user-filter="department" aria-label="Filtrovat podle oddělení"><option value="">Vše</option></select></th>
-                    <th><select data-user-filter="manager" aria-label="Filtrovat podle nadřízeného"><option value="">Vše</option></select></th>
-                    <th><select data-user-filter="shift" aria-label="Filtrovat podle směny"><option value="">Vše</option></select></th>
-                    <th><input type="search" data-user-filter="email" aria-label="Filtrovat podle emailu" placeholder="Filtrovat"></th>
-                    <th><input type="search" data-user-filter="phone" aria-label="Filtrovat podle telefonu" placeholder="Filtrovat"></th>
-                    <th>
-                      <select data-user-filter="control" aria-label="Filtrovat podle kontroly">
-                        <option value="">Vše</option>
-                        <option value="yes">Ano</option>
-                        <option value="no">Ne</option>
-                      </select>
-                    </th>
-                    <th>
-                      <select data-user-filter="bonus" aria-label="Filtrovat podle docházkového bonusu">
-                        <option value="">Vše</option>
-                        <option value="yes">Ano</option>
-                        <option value="no">Ne</option>
-                      </select>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody id="userManagementBody"></tbody>
+            <div class="audit-toolbar">
+              <input id="auditSearch" type="search" placeholder="Hledat v auditu…" aria-label="Hledat v auditu">
+              <select id="auditModuleFilter" aria-label="Filtrovat podle modulu"><option value="">Všechny moduly</option></select>
+            </div>
+            <div class="audit-table-wrap">
+              <table class="audit-table">
+                <thead><tr><th>Datum / čas</th><th>Uživatel</th><th>Modul</th><th>Akce</th><th>Objekt</th><th>Pole</th><th>Z čeho</th><th>Na co</th><th>IP adresa</th><th>Zařízení</th></tr></thead>
+                <tbody id="auditTableBody"></tbody>
               </table>
             </div>
           </div>
@@ -149,6 +121,6 @@
   </div>
 
   <script src="./audit.js"></script>
-  <script src="./user-management.js"></script>
+  <script src="./historie-zmen.js"></script>
 </body>
 </html>

@@ -172,12 +172,14 @@
       return;
     }
     try {
+      const previousVehicles=transportConfig.vehicles;
       const nextConfig={...transportConfig,vehicles:sortVehicles(collectVehicles())};
       saveVehicleMappingsBtn.disabled=true;
       await firestoreSetDoc(transportConfigRef, nextConfig);
       transportConfig=nextConfig;
       vehicleDirty=false;
       renderMappingEditor();
+      window.KVEAudit?.logChange({ module:'Mapování přepravy', action:'Uložení mapování vozidel', entity:'Vozidla', field:'vehicles', oldValue:previousVehicles, newValue:transportConfig.vehicles });
       vehicleMappingStatus.textContent='Změny vozidel byly uloženy pro všechny.';
       vehicleMappingStatus.style.color='';
     } catch(err) {
@@ -194,6 +196,7 @@
       return;
     }
     try {
+      const previousRules={ groups:transportConfig.groups, placeRules:transportConfig.placeRules };
       const nextConfig={
         ...transportConfig,
         groups:{inside:{label:insideLabelInput.value.trim()||'Vnitřek'},outside:{label:outsideLabelInput.value.trim()||'Venek'}},
@@ -204,6 +207,7 @@
       transportConfig=nextConfig;
       rulesDirty=false;
       renderMappingEditor();
+      window.KVEAudit?.logChange({ module:'Mapování přepravy', action:'Uložení pravidel', entity:'Pravidla přepravy', field:'groups/placeRules', oldValue:previousRules, newValue:{ groups:transportConfig.groups, placeRules:transportConfig.placeRules } });
       transportRulesStatus.textContent='Pravidla přepravy byla uložena pro všechny.';
       transportRulesStatus.style.color='';
     } catch(err) {
