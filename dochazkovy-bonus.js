@@ -10,8 +10,10 @@
   const PEOPLE_COLLECTION = "okbase_absences_by_person";
   const ANNOTATIONS_COLLECTION = "userAnnotations";
   const PAYMENTS_COLLECTION = "bonusPayments";
+  const SICKNESS_COLLECTION = "sicknessEvents";
   const DEFAULT_TOTAL = 10000;
   const YEAR = new Date().getFullYear();
+  const QUARTER_START_MONTH = { q1: 0, q2: 3, q3: 6, q4: 9 };
 
   const LEGACY_USERS = Array.isArray(window.BONUS_USERS) ? window.BONUS_USERS : [];
   const LEGACY_PAYMENTS = Array.isArray(window.BONUS_PAYMENTS) ? window.BONUS_PAYMENTS : [];
@@ -51,6 +53,7 @@
   let annotations = {};
   let users = [];
   let payments = {};
+  let sicknessByPerson = {};
   let totalAmount = DEFAULT_TOTAL;
   let pendingChange = null;
 
@@ -89,8 +92,30 @@
     return date > new Date(YEAR, month, 1);
   }
 
+  function quarterRange(quarter) {
+    const startMonth = QUARTER_START_MONTH[quarter];
+    return { start: new Date(YEAR, startMonth, 1), end: new Date(YEAR, startMonth + 3, 1) };
+  }
+
+  function hasSicknessInQuarter(user, quarter) {
+    const events = sicknessByPerson[user.id];
+    if (!events || !events.length) return false;
+    const { start, end } = quarterRange(quarter);
+    return events.some(evt => {
+      const d = new Date(evt.detectedAt || evt.casPreruseni || '');
+      return !Number.isNaN(d.getTime()) && d >= start && d < end;
+    });
+  }
+
+  // Automaticky vynulováno kvůli nemoci z OKbase, ale jen dokud to člověk
+  // ručně nepotvrdí/neupraví (existující _note znamená, že už to řešil).
+  function autoSickQuarter(user, quarter, payment) {
+    return hasSicknessInQuarter(user, quarter) && !payment[`${quarter}_note`];
+  }
+
   function effectiveQuarter(user, quarter) {
     if (afterQuarterStart(user.datum_nastupu, quarter)) return 0;
+    if (autoSickQuarter(user, quarter, getPayment(user))) return 0;
     return getPayment(user)[quarter];
   }
 
@@ -159,13 +184,18 @@
 
   function renderQuarterCell(user, payment, quarter) {
     const excluded = afterQuarterStart(user.datum_nastupu, quarter);
-    const value = excluded ? 0 : payment[quarter];
+    const sick = !excluded && autoSickQuarter(user, quarter, payment);
+    const value = excluded || sick ? 0 : payment[quarter];
     const note = payment[`${quarter}_note`] || '';
-    const title = excluded ? `Nástup ${formatDate(user.datum_nastupu)} je po začátku kvartálu.` : note;
-    const colorClass = value === 0 ? (excluded && !note ? 'cell-disabled-zero' : 'cell-danger') : '';
+    const title = excluded
+      ? `Nástup ${formatDate(user.datum_nastupu)} je po začátku kvartálu.`
+      : sick
+        ? 'OKbase hlásí nemoc v tomto čtvrtletí. Klikněte pro potvrzení odměny.'
+        : note;
+    const colorClass = value === 0 ? ((excluded || sick) && !note ? 'cell-disabled-zero' : 'cell-danger') : '';
     return `<td class="bonus-quarter-cell ${colorClass}">
       <button type="button" class="bonus-quarter-btn" data-bonus-user="${escapeAttr(user.id)}" data-bonus-quarter="${quarter}" ${excluded ? 'disabled' : ''} title="${escapeAttr(title)}">
-        <span>${Number(value).toLocaleString('cs-CZ')} Kč</span>${note && !excluded ? '<small aria-hidden="true">●</small>' : ''}
+        <span>${Number(value).toLocaleString('cs-CZ')} Kč</span>${note && !excluded ? '<small aria-hidden="true">●</small>' : ''}${sick && !note ? '<small class="bonus-sick-badge" aria-hidden="true">Nemoc</small>' : ''}
       </button>
     </td>`;
   }
@@ -178,7 +208,7 @@
     const target = current > 0 ? 0 : totalAmount / 4;
     pendingChange = { user, quarter, target };
     changeTitle.textContent = `${user.jmeno} – ${quarter.toUpperCase()} → ${target.toLocaleString('cs-CZ')} Kč`;
-    changeReason.value = '';
+    changeReason.value = target === 0 && hasSicknessInQuarter(user, quarter) ? 'OKbase: nemoc v průběhu čtvrtletí' : '';
     openModal(changeModal);
     setTimeout(() => changeReason.focus(), 0);
   }
@@ -424,6 +454,20 @@
         render();
       }, error => {
         console.error('dochazkovy-bonus.js: chyba synchronizace nastavení odměn.', error);
+      });
+
+      onSnapshot(collection(mappingDb, SICKNESS_COLLECTION), snapshot => {
+        const next = {};
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if (!data?.personId) return;
+          if (!next[data.personId]) next[data.personId] = [];
+          next[data.personId].push(data);
+        });
+        sicknessByPerson = next;
+        render();
+      }, error => {
+        console.error('dochazkovy-bonus.js: chyba synchronizace nemocí z OKbase.', error);
       });
 
       // Jednorázový import existující evidence odměn (bonus-seed-data.js) do Firestore,

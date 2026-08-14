@@ -27,6 +27,7 @@
 .bonus-quarter-cell { padding:5px 7px !important; text-align:center; }
 .bonus-quarter-btn { width:100%; min-width:82px; border:0; background:transparent; color:inherit; border-radius:6px; padding:7px 8px; font:inherit; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; }
 .bonus-quarter-btn small { color:#64748b; font-size:.5rem; }
+.bonus-quarter-btn .bonus-sick-badge { color:#9a3412; background:#fed7aa; border-radius:4px; padding:1px 5px; font-size:.58rem; font-weight:800; text-transform:uppercase; letter-spacing:.02em; }
 .bonus-quarter-cell.cell-danger { background:#f8d7da; color:#842029; }
 .bonus-quarter-cell.cell-disabled-zero { background:#e9ecef; color:#6c757d; }
 .bonus-quarter-cell.cell-disabled-zero .bonus-quarter-btn { cursor:not-allowed; color:#6c757d; }
