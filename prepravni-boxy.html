@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Přepravní boxy | K&amp;V ELEKTRO</title>
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./prepravni-boxy.css">
+</head>
+<body>
+  <header class="app-header no-print">
+    <div class="header-row">
+      <div class="header-brand">
+        <div class="brand"><img class="brand-logo" src="./kve-logo.png" alt="K&V ELEKTRO"></div>
+        <div class="page-title">Přepravní boxy</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar no-print" aria-label="Hlavní navigace">
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-title">Hlavní</div>
+        <a href="./index.html" class="sidebar-link">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+          </span>
+          <span class="sidebar-label">Domů</span>
+        </a>
+        <a href="./preprava.html" class="sidebar-link">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+          </span>
+          <span class="sidebar-label">Přeprava</span>
+        </a>
+
+        <div class="sidebar-section-title">Sklad a logistika</div>
+        <a href="./mapovani-prepravy.html" class="sidebar-link">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
+          </span>
+          <span class="sidebar-label">Mapování přepravy</span>
+        </a>
+        <a href="./ctecky.html" class="sidebar-link">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h4"/></svg>
+          </span>
+          <span class="sidebar-label">Čtečky</span>
+        </a>
+        <a href="./prepravni-boxy.html" class="sidebar-link active" aria-current="page">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+          </span>
+          <span class="sidebar-label">Přepravní boxy</span>
+        </a>
+
+        <div class="sidebar-section-title">Uživatelé</div>
+        <a href="./sprava-uzivatelu.html" class="sidebar-link">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><path d="M3 19c0-3 2-5 5-5s5 2 5 5"/><path d="M16 8h5M18.5 5.5v5"/><path d="M15 15h6M15 19h6"/></svg>
+          </span>
+          <span class="sidebar-label">Správa uživatelů</span>
+        </a>
+        <a href="./pritomnosti.html" class="sidebar-link">
+          <span class="sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-3 2-5 5-5s5 2 5 5"/><circle cx="17" cy="9" r="2"/><path d="M15 14c3 0 5 2 5 5"/></svg>
+          </span>
+          <span class="sidebar-label">Přítomnosti</span>
+        </a>
+      </nav>
+    </aside>
+
+    <div class="content-area">
+      <main class="shell">
+        <section id="boxesPage" class="boxes-page">
+          <div class="panel boxes-panel">
+            <div class="boxes-head">
+              <div>
+                <h1>Evidence přepravních boxů</h1>
+                <p>Klikni na box rámu. U rámu můžeš přiřadit MJ, vrátit ho Domů, nastavit Neznámý a uložit poznámku.</p>
+              </div>
+              <button id="addBoxBtn" class="btn primary" type="button">Přidat obal</button>
+            </div>
+
+            <div id="boxActorInline" class="box-actor-inline">
+              <span>Zapisuje se jako: <strong id="boxActorName">—</strong></span>
+              <button id="boxActorChangeBtn" type="button" class="box-actor-change-btn">Změnit</button>
+            </div>
+
+            <div class="boxes-toolbar">
+              <div id="boxSummary" class="box-summary" aria-label="Souhrn přepravních boxů"></div>
+              <div class="box-view-switch" role="group" aria-label="Zobrazení přepravních boxů">
+                <button type="button" class="box-view-btn active" data-box-view="cards">Karty</button>
+                <button type="button" class="box-view-btn" data-box-view="kanban">Kanban</button>
+                <button type="button" class="box-view-btn" data-box-view="list">Seznam</button>
+              </div>
+            </div>
+
+            <div id="boxCards" class="box-cards"></div>
+            <div id="boxKanban" class="box-kanban" hidden></div>
+            <div id="boxList" class="box-list" hidden></div>
+
+            <div class="box-history-panel">
+              <div class="box-history-head">
+                <div>
+                  <h2>Historie pohybu boxů</h2>
+                  <div id="boxHistoryCount" class="box-history-count"></div>
+                </div>
+              </div>
+              <div class="box-history-wrap">
+                <table class="box-history-table">
+                  <thead><tr><th>Název rámu</th><th>Kód</th><th>Akce</th><th>Stav</th><th>Manip. jednotka</th><th>Poznámka</th><th>Uživatel, který přidal</th><th>Aktualizace</th></tr></thead>
+                  <tbody id="boxHistoryBody"></tbody>
+                </table>
+              </div>
+              <div id="boxHistoryPager" class="box-history-pager"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="boxModal" class="box-modal" hidden aria-hidden="true">
+    <div class="box-modal-backdrop" data-box-modal-close></div>
+    <div class="box-modal-dialog box-frame-dialog" role="dialog" aria-modal="true" aria-labelledby="boxModalTitle">
+      <div class="box-frame-modal-content">
+        <div class="box-frame-modal-head">
+          <div>
+            <h2 id="boxModalTitle">Vybraný rám</h2>
+            <div id="boxModalCode" class="box-modal-code">Kód rámu:</div>
+          </div>
+          <div class="box-frame-head-actions">
+            <div class="box-state-menu-wrap">
+              <button id="boxStateMenuBtn" class="box-icon-btn" type="button" aria-label="Nastavení stavů">⚙</button>
+              <div id="boxStateMenu" class="box-state-menu" hidden>
+                <button id="boxSetUnknownBtn" type="button">Nastavit na Neznámý</button>
+                <button id="boxArchiveBtn" class="box-archive-action" type="button">Archivovat obal</button>
+              </div>
+            </div>
+            <button class="box-icon-btn box-close-icon" type="button" data-box-modal-close aria-label="Zavřít">×</button>
+          </div>
+        </div>
+        <div id="boxArchivedInfo" class="box-archived-info" hidden>Obal je v archivu. Pro další práci ho nejdřív vrať z archivu.</div>
+        <label class="box-frame-field"><span>Manipulační jednotka</span><input id="boxManipUnit" type="text" autocomplete="off" placeholder="Naskenuj nebo napiš kód manipulační jednotky"></label>
+        <label class="box-frame-field"><span>Poznámka</span><textarea id="boxNote" rows="3" placeholder="Volitelná interní poznámka"></textarea></label>
+        <div class="box-frame-actions">
+          <button id="boxSaveManipBtn" class="box-action-primary" type="button">Uložit MJ</button>
+          <button id="boxReturnHomeBtn" class="box-action-home" type="button">Vrátit Domů</button>
+          <button id="boxSaveNoteBtn" class="box-action-note" type="button">Uložit poznámku</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="boxAddModal" class="box-modal" hidden aria-hidden="true">
+    <div class="box-modal-backdrop" data-box-add-modal-close></div>
+    <div class="box-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="boxAddModalTitle">
+      <div class="box-modal-header">
+        <h2 id="boxAddModalTitle">Přidat obal</h2>
+        <button class="box-modal-x" type="button" data-box-add-modal-close aria-label="Zavřít">×</button>
+      </div>
+      <form id="boxAddForm" class="box-form">
+        <div class="box-form-grid">
+          <label><span>Kód obalu *</span><input id="boxAddCode" type="text" required autocomplete="off"></label>
+          <label><span>Název rámu *</span><input id="boxAddName" type="text" required placeholder="např. Y - RAM SOLAR"></label>
+        </div>
+        <div class="box-modal-actions">
+          <button class="btn" type="button" data-box-add-modal-close>Zrušit</button>
+          <button class="btn primary" type="submit">Přidat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./boxes-seed-data.js"></script>
+  <script src="./prepravni-boxy.js"></script>
+</body>
+</html>
