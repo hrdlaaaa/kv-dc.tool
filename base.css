@@ -112,11 +112,25 @@ body::before {
   width: 260px;
   min-width: 0;
 }
+.header-actor {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+.header-actor-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 34px; padding: 6px 10px;
+  border: 1px solid #cbd5e1; border-radius: 8px;
+  background: #fff; color: #475569; font: inherit; font-size: .78rem; cursor: pointer;
+}
+.header-actor-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+.header-actor-btn strong { color: #0f172a; font-size: .8rem; }
 
 @media (max-width: 980px) {
   :root { --sidebar-width: 66px; }
   .header-center { left: auto; right: 10px; transform: translateY(-50%); }
   .header-status { display: none; }
+  .header-actor { display: none; }
   .brand-logo { width: 190px; }
   .page-title { display: none; }
 }

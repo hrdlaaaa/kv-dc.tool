@@ -123,11 +123,6 @@ body.box-modal-open { overflow:hidden; }
 .box-action-note { border:1px solid #d0d5dd; background:#f9fafb; color:#344054; }
 .box-archived-info { border:1px solid #cbd5e1; border-radius:7px; background:#f8fafc; color:#475569; padding:9px 10px; font-size:12px; }
 
-.box-actor-inline { display:flex; align-items:center; gap:8px; margin-bottom:14px; padding:8px 12px; border:1px solid #e4e7ec; border-radius:9px; background:#f9fafb; color:#475467; font-size:12px; }
-.box-actor-inline strong { color:#101828; }
-.box-actor-change-btn { border:0; background:transparent; padding:0; color:#175cd3; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
-.box-actor-change-btn:hover { text-decoration:underline; }
-
 @media (max-width:1000px) { .box-kanban { grid-template-columns:1fr; } }
 @media (max-width:700px) { .boxes-head { flex-direction:column; } .box-form-grid { grid-template-columns:1fr; } .box-form-wide { grid-column:auto; } }
 @media (max-width:600px) { .box-frame-actions { grid-template-columns:1fr; } .box-summary-archive { margin-left:0; } }

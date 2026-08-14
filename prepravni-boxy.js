@@ -16,8 +16,6 @@
   const historyCount = $('boxHistoryCount');
   const addBtn = $('addBoxBtn');
   const viewButtons = Array.from(document.querySelectorAll('[data-box-view]'));
-  const actorNameEl = $('boxActorName');
-  const actorChangeBtn = $('boxActorChangeBtn');
 
   const modal = $('boxModal');
   const modalTitle = $('boxModalTitle');
@@ -54,16 +52,6 @@
 
   function normalizeCode(value) { return String(value ?? '').trim().replace(/\s+/g, '').toUpperCase(); }
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
-
-  function renderActor() {
-    const actor = window.KVEAudit?.getActor?.();
-    actorNameEl.textContent = actor?.name || 'Neznámý uživatel';
-  }
-  actorChangeBtn.addEventListener('click', async () => {
-    await window.KVEAudit?.chooseActor?.();
-    renderActor();
-  });
-  window.addEventListener('kve:audit-actor-changed', renderActor);
 
   function findFrame(code) { return frames.find(frame => frame.frame_code === normalizeCode(code)) || null; }
   function activeFrames() { return frames.filter(frame => !frame.archived); }
@@ -429,7 +417,6 @@
     if (!addModal.hidden) closeAddModal();
   });
 
-  renderActor();
   renderAll();
 
   // Přepravní boxy jsou sdílené pro všechny přes Firestore (stejný kv-transport-mapping

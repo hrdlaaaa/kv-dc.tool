@@ -423,6 +423,24 @@
     actorIsFresh
   };
 
+  function renderHeaderActor() {
+    const button = document.getElementById('headerActorButton');
+    if (!button) return;
+    const actor = loadActor();
+    button.innerHTML = actor
+      ? `<span>Aktivní uživatel:</span><strong>${escapeHtml(actor.name)}</strong>`
+      : '<span>Aktivní uživatel:</span><strong>Není vybrán</strong>';
+  }
+
+  function initHeaderActor() {
+    const button = document.getElementById('headerActorButton');
+    if (!button) return;
+    renderHeaderActor();
+    button.addEventListener('click', () => chooseActor(true, 'Záhlaví stránky'));
+    window.addEventListener('kve:audit-actor-changed', renderHeaderActor);
+  }
+
+  initHeaderActor();
   getMetadata();
 
   // Identita pro audit se ověřuje při načtení stránky, ale modal se ukáže

@@ -4,10 +4,6 @@
 .audit-head h1 { margin:0; font-size:1.12rem; color:var(--text); }
 .audit-head p { margin:4px 0 0; color:#64748b; font-size:.78rem; }
 .audit-head-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-.audit-actor-button { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:6px 10px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#475569; font:inherit; font-size:.78rem; cursor:pointer; }
-.audit-actor-button:hover { background:#f8fafc; border-color:#94a3b8; }
-.audit-actor-button strong { color:#0f172a; font-size:.8rem; }
-.audit-actor-button small { color:#64748b; font-size:.7rem; }
 .audit-count { flex:0 0 auto; padding:4px 8px; border:1px solid #dbe2eb; border-radius:7px; background:#f8fafc; color:#64748b; font-size:.72rem; }
 .audit-toolbar { display:flex; gap:8px; margin-bottom:12px; }
 .audit-toolbar input, .audit-toolbar select { min-height:36px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; padding:6px 9px; color:#334155; font:inherit; font-size:.78rem; }

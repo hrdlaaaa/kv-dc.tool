@@ -8,7 +8,6 @@
   const moduleFilter = document.getElementById('auditModuleFilter');
   const count = document.getElementById('auditCount');
   const body = document.getElementById('auditTableBody');
-  const actorButton = document.getElementById('auditActorButton');
 
   const MAX_ENTRIES = 1000;
   let entries = [];
@@ -24,17 +23,8 @@
     if (modules.includes(selected)) moduleFilter.value = selected;
   }
 
-  function renderActor() {
-    if (!actorButton) return;
-    const actor = window.KVEAudit?.getActor?.();
-    actorButton.innerHTML = actor
-      ? `<span>Aktivní uživatel:</span><strong>${escapeHtml(actor.name)}</strong>${actor.email ? `<small>${escapeHtml(actor.email)}</small>` : ''}`
-      : '<span>Aktivní uživatel:</span><strong>Není vybrán</strong>';
-  }
-
   function render() {
     fillModules(entries);
-    renderActor();
     const q = (search.value || '').trim().toLocaleLowerCase('cs-CZ');
     const module = moduleFilter.value;
     const data = entries.filter(item => {
@@ -59,11 +49,6 @@
 
   search.addEventListener('input', render);
   moduleFilter.addEventListener('change', render);
-  actorButton?.addEventListener('click', async () => {
-    await window.KVEAudit?.chooseActor?.();
-    renderActor();
-  });
-  window.addEventListener('kve:audit-actor-changed', renderActor);
 
   render();
 
