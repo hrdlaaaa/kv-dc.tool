@@ -5,7 +5,6 @@
   if (!page) return;
 
   const TASK_KEY = 'kve.home.todos.local.v1';
-  const WHEEL_KEY = 'kve.wheel.local.v1';
   const PRESENCE_FILTER_KEY = 'kve.home.presence.departments.v1';
   const WEATHER_LOCATION_KEY = 'kve.home.weather.location.v1';
   const WEATHER_LOCATION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -84,6 +83,7 @@
   let presenceBuckets = { present: [], break: [], absent: [], sick: [], vacation: [] };
   let presenceRows = [];
   let presenceLastUpdate = 0;
+  let wheelRows = {};
 
   addToggle.addEventListener('click', () => {
     taskForm.hidden = !taskForm.hidden;
@@ -267,7 +267,6 @@
       tasks = loadTasks();
       renderTasks();
     }
-    if (event.key === WHEEL_KEY) renderControls();
   });
 
   renderGreeting();
@@ -275,6 +274,7 @@
   renderTasks();
   renderControls();
   connectPresence();
+  connectWheelRows();
 
   function connectPresence() {
     (async () => {
@@ -691,8 +691,7 @@
   }
 
   function renderControls() {
-    const wheel = loadWheelState();
-    const entries = Object.entries(wheel.rows || {})
+    const entries = Object.entries(wheelRows)
       .map(([key, record]) => controlEntry(key, record))
       .filter(Boolean)
       .sort((a, b) => b.date.localeCompare(a.date) || shiftOrder(a.shiftKey) - shiftOrder(b.shiftKey));
@@ -701,6 +700,37 @@
     controlsList.innerHTML = entries.length
       ? entries.slice(0, 8).map(controlHtml).join('')
       : '<div class="home-empty home-controls-empty">Zatím nejsou uložené žádné kontroly.</div>';
+  }
+
+  function connectWheelRows() {
+    (async () => {
+      try {
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js");
+        const { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot } =
+          await import("https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js");
+
+        const app = initializeApp({
+          apiKey: "AIzaSyBX3Phi9CNQPjxYXMKil7exLrJ7ZbRUMbM",
+          authDomain: "kv-transport-mapping.firebaseapp.com",
+          projectId: "kv-transport-mapping",
+          storageBucket: "kv-transport-mapping.firebasestorage.app",
+          messagingSenderId: "144100896901",
+          appId: "1:144100896901:web:2ceef97e784e06385239ec"
+        }, "kvTransportMapping");
+        const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+
+        onSnapshot(collection(db, 'wheelRows'), snapshot => {
+          const next = {};
+          snapshot.forEach(docSnap => { next[docSnap.id] = docSnap.data(); });
+          wheelRows = next;
+          renderControls();
+        }, error => {
+          console.error('domu.js: chyba synchronizace kola štěstí.', error);
+        });
+      } catch (error) {
+        console.error('domu.js: nepodařilo se připojit k Firestore (kolo štěstí).', error);
+      }
+    })();
   }
 
   function controlEntry(key, record) {
@@ -737,11 +767,11 @@
       statusClass = 'partial';
     }
     const people = [item.controller ? `Kontrolor: ${item.controller}` : '', item.witness ? `Svědek: ${item.witness}` : ''].filter(Boolean).join(' • ');
-    return `<div class="home-control-card">
+    return `<a class="home-control-card" href="./kolo-stesti.html?date=${encodeURIComponent(item.date)}">
       <div class="home-control-primary"><span class="home-control-date">${escapeHtml(formatDateCs(item.date))}</span><strong>${escapeHtml(shiftLabel(item.shiftKey))}</strong></div>
       <div class="home-control-people">${escapeHtml(people || 'Kontrolor a svědek zatím nevybráni')}</div>
       <span class="home-control-status ${statusClass}">${escapeHtml(statusText)}</span>
-    </div>`;
+    </a>`;
   }
 
   function openTaskModal(id) {
@@ -838,14 +868,6 @@
     try { localStorage.setItem(TASK_KEY, JSON.stringify(tasks)); } catch (_) {}
   }
 
-  function loadWheelState() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(WHEEL_KEY) || '{}');
-      return parsed && typeof parsed === 'object' ? parsed : { rows: {} };
-    } catch (_) {
-      return { rows: {} };
-    }
-  }
 
   function createId() {
     if (window.crypto?.randomUUID) return window.crypto.randomUUID();

@@ -38,7 +38,7 @@
 .home-done-section .home-task-list { margin-top: 8px; }
 .home-empty { padding: 10px 11px; border: 1px solid #e0e6ee; border-radius: 9px; background: #f8fafc; color: #64748b; font-size: .8rem; }
 .home-controls-list { display: grid; gap: 7px; }
-.home-control-card { width: 100%; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 10px; min-height: 48px; padding: 8px 9px; border: 1px solid #dfe5ee; border-radius: 9px; background: #fff; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.home-control-card { width: 100%; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 10px; min-height: 48px; padding: 8px 9px; border: 1px solid #dfe5ee; border-radius: 9px; background: #fff; color: inherit; text-align: left; text-decoration: none; cursor: pointer; font: inherit; }
 .home-control-card:hover { border-color: #c2ccda; box-shadow: 0 3px 10px rgba(20,44,106,.06); }
 .home-control-primary { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
 .home-control-primary strong { font-size: .8rem; }

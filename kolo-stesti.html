@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Správa uživatelů | K&amp;V ELEKTRO</title>
+  <title>Kolo štěstí | K&amp;V ELEKTRO</title>
   <link rel="stylesheet" href="./base.css">
-  <link rel="stylesheet" href="./user-management.css">
+  <link rel="stylesheet" href="./kolo-stesti.css">
 </head>
 <body>
   <header class="app-header no-print">
     <div class="header-row">
       <div class="header-brand">
         <div class="brand"><img class="brand-logo" src="./kve-logo.png" alt="K&V ELEKTRO"></div>
-        <div class="page-title">Správa uživatelů</div>
+        <div class="page-title">Kolo štěstí</div>
       </div>
     </div>
   </header>
@@ -33,7 +33,7 @@
           </span>
           <span class="sidebar-label">Přeprava</span>
         </a>
-        <a href="./kolo-stesti.html" class="sidebar-link">
+        <a href="./kolo-stesti.html" class="sidebar-link active" aria-current="page">
           <span class="sidebar-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M17.7 6.3l-2.8 2.8M9.1 14.9l-2.8 2.8"/><circle cx="12" cy="12" r="2"/></svg>
           </span>
@@ -61,7 +61,7 @@
         </a>
 
         <div class="sidebar-section-title">Uživatelé</div>
-        <a href="./sprava-uzivatelu.html" class="sidebar-link active" aria-current="page">
+        <a href="./sprava-uzivatelu.html" class="sidebar-link">
           <span class="sidebar-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><path d="M3 19c0-3 2-5 5-5s5 2 5 5"/><path d="M16 8h5M18.5 5.5v5"/><path d="M15 15h6M15 19h6"/></svg>
           </span>
@@ -78,62 +78,65 @@
 
     <div class="content-area">
       <main class="shell">
-        <section class="dashboard-page">
-          <div class="panel user-management-panel">
-            <div class="user-management-head">
-              <h1>Správa uživatelů</h1>
-              <div class="user-management-head-actions">
-                <button id="refreshUserManagementBtn" class="btn btn-secondary user-management-refresh" type="button">Aktualizovat uživatele</button>
-                <div id="userManagementStatus" class="user-management-status">Připraveno</div>
+        <section id="wheelPage" class="wheel-page">
+          <div class="panel wheel-panel">
+            <div class="wheel-head">
+              <div>
+                <h1>Kolo štěstí</h1>
+                <p>Plánování kontrol podle směnových skupin a nastavení ze Správy uživatelů.</p>
               </div>
+              <div id="wheelStatus" class="wheel-status">Připraveno</div>
             </div>
-            <div class="user-management-table-wrap">
-              <table class="user-management-table">
-                <thead>
-                  <tr class="user-management-columns">
-                    <th>Jméno</th>
-                    <th>Místo</th>
-                    <th>Oddělení</th>
-                    <th>Nadřízený</th>
-                    <th>Směna</th>
-                    <th>Email</th>
-                    <th>Telefon</th>
-                    <th class="center-col">Kontrola</th>
-                    <th class="center-col">Docházkový bonus</th>
-                  </tr>
-                  <tr class="user-management-filters">
-                    <th><input type="search" data-user-filter="name" aria-label="Filtrovat podle jména" placeholder="Filtrovat"></th>
-                    <th><select data-user-filter="place" aria-label="Filtrovat podle místa"><option value="">Vše</option></select></th>
-                    <th><select data-user-filter="department" aria-label="Filtrovat podle oddělení"><option value="">Vše</option></select></th>
-                    <th><select data-user-filter="manager" aria-label="Filtrovat podle nadřízeného"><option value="">Vše</option></select></th>
-                    <th><select data-user-filter="shift" aria-label="Filtrovat podle směny"><option value="">Vše</option></select></th>
-                    <th><input type="search" data-user-filter="email" aria-label="Filtrovat podle emailu" placeholder="Filtrovat"></th>
-                    <th><input type="search" data-user-filter="phone" aria-label="Filtrovat podle telefonu" placeholder="Filtrovat"></th>
-                    <th>
-                      <select data-user-filter="control" aria-label="Filtrovat podle kontroly">
-                        <option value="">Vše</option>
-                        <option value="yes">Ano</option>
-                        <option value="no">Ne</option>
-                      </select>
-                    </th>
-                    <th>
-                      <select data-user-filter="bonus" aria-label="Filtrovat podle docházkového bonusu">
-                        <option value="">Vše</option>
-                        <option value="yes">Ano</option>
-                        <option value="no">Ne</option>
-                      </select>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody id="userManagementBody"></tbody>
-              </table>
+            <div class="wheel-toolbar no-print">
+              <button id="wheelPrevMonth" class="wheel-month-nav" type="button" aria-label="Předchozí měsíc">‹</button>
+              <strong id="wheelMonthLabel" class="wheel-month-label"></strong>
+              <button id="wheelNextMonth" class="wheel-month-nav" type="button" aria-label="Následující měsíc">›</button>
+              <button id="wheelToday" class="btn btn-secondary wheel-today-btn" type="button">Dnes</button>
+              <button id="wheelMappingBtn" class="btn primary wheel-mapping-open-btn" type="button">Mapování uživatelů</button>
             </div>
+            <div id="wheelCalendar" class="wheel-calendar"></div>
           </div>
         </section>
       </main>
     </div>
   </div>
 
-  <script src="./user-management.js"></script>
+  <div id="wheelResultModal" class="wheel-result-modal" hidden aria-hidden="true">
+    <div class="wheel-result-backdrop" data-wheel-result-close></div>
+    <div class="wheel-result-dialog" role="dialog" aria-modal="true" aria-labelledby="wheelResultTitle">
+      <div class="wheel-result-header">
+        <div>
+          <h2 id="wheelResultTitle">Výsledek kontroly</h2>
+          <p id="wheelResultSubtitle"></p>
+        </div>
+        <button class="wheel-result-x" type="button" data-wheel-result-close aria-label="Zavřít">×</button>
+      </div>
+      <div id="wheelResultTabs" class="wheel-result-tabs"></div>
+      <div id="wheelResultBody" class="wheel-result-body"></div>
+      <div class="wheel-result-actions">
+        <button class="btn btn-secondary" type="button" data-wheel-result-close>Zavřít</button>
+        <button id="wheelResultSave" class="btn primary" type="button">Uložit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="wheelMappingModal" class="wheel-mapping-modal" hidden aria-hidden="true">
+    <div class="wheel-mapping-backdrop" data-wheel-mapping-close></div>
+    <div class="wheel-mapping-dialog" role="dialog" aria-modal="true" aria-labelledby="wheelMappingTitle">
+      <div class="wheel-mapping-header">
+        <div>
+          <h2 id="wheelMappingTitle">Mapování uživatelů</h2>
+          <p>Zařaďte každého uživatele do jedné směnové skupiny.</p>
+        </div>
+        <button class="wheel-mapping-x" type="button" data-wheel-mapping-close aria-label="Zavřít">×</button>
+      </div>
+      <div id="wheelMappingColumns" class="wheel-mapping-columns"></div>
+      <div class="wheel-mapping-actions">
+        <button class="btn btn-secondary" type="button" data-wheel-mapping-close>Zavřít</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./kolo-stesti.js"></script>
 </body>
 </html>
