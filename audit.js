@@ -5,6 +5,8 @@
   const ACTOR_LAST_KEY = 'kve.audit.actor.last.v1';
   const ACTOR_TTL_MS = 60 * 60 * 1000;
   const DEVICE_ID_KEY = 'kve.audit.device-id.v1';
+  const ACTOR_ROSTER_CACHE_KEY = 'kve.audit.actor-roster.v1';
+  const ACTOR_ROSTER_TTL_MS = 24 * 60 * 60 * 1000;
 
   const ROOT_ORG_CODE = "110700000";
   const ORG_RANGE_END = "110800000";
@@ -147,8 +149,35 @@
     return firestoreReady;
   }
 
+  // Seznam jmen pro našeptávač se nepotřebuje živě — stačí max. 24h stará data,
+  // takže se cachuje v localStorage a Firestore se čte jen jednou za den na
+  // zařízení místo znovu při každém výběru uživatele (viz ACTOR_TTL_MS = 1h).
+  // Hostitelská stránka (Domů/Kolo štěstí/...) si svoje vlastní živé napojení
+  // na stejnou kolekci drží nezávisle a beze změny.
+  function loadActorRosterCache() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(ACTOR_ROSTER_CACHE_KEY) || 'null');
+      if (!raw || !Array.isArray(raw.rows) || !raw.savedAt) return null;
+      if (Date.now() - raw.savedAt >= ACTOR_ROSTER_TTL_MS) return null;
+      return raw.rows;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function saveActorRosterCache(rows) {
+    try {
+      localStorage.setItem(ACTOR_ROSTER_CACHE_KEY, JSON.stringify({ rows, savedAt: Date.now() }));
+    } catch (_) {}
+  }
+
   async function getActorRows() {
     if (actorRowsPromise) return actorRowsPromise;
+    const cachedRows = loadActorRosterCache();
+    if (cachedRows) {
+      actorRowsPromise = Promise.resolve(cachedRows);
+      return actorRowsPromise;
+    }
     actorRowsPromise = (async () => {
       try {
         const ctx = await getFirestore();
@@ -168,6 +197,7 @@
               }))
               .filter(row => row.name)
               .sort((a, b) => a.name.localeCompare(b.name, 'cs-CZ', { sensitivity: 'base' }));
+            saveActorRosterCache(rows);
             resolve(rows);
           }, error => {
             console.error('audit.js: chyba načítání osob pro našeptávač.', error);
