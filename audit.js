@@ -431,6 +431,15 @@
     return appendEntry({ module, action, entity, field, oldValue, newValue, detail }, actor);
   }
 
+  // Pro plně automatické změny (např. Automatická Neschopenka), které neudělal
+  // žádný konkrétní člověk u zařízení — nepoužívá se identita aktuálního
+  // uživatele, aby se automatická akce v Historii změn neomylem nepřipsala
+  // náhodou zrovna otevřenému zařízení.
+  const SYSTEM_ACTOR = { id: '', name: 'Systém (OKbase)', email: '' };
+  function logSystemChange({ module, action, entity, field, oldValue, newValue, detail } = {}) {
+    return appendEntry({ module, action, entity, field, oldValue, newValue, detail }, SYSTEM_ACTOR);
+  }
+
   function logDiff(module, action, entity, oldObj, newObj, fields) {
     const keys = Array.isArray(fields) ? fields : Array.from(new Set([...Object.keys(oldObj || {}), ...Object.keys(newObj || {})]));
     let count = 0;
@@ -446,6 +455,7 @@
 
   window.KVEAudit = {
     logChange,
+    logSystemChange,
     logDiff,
     getActor: loadActor,
     chooseActor: () => chooseActor(true, 'Historie změn'),

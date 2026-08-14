@@ -107,16 +107,37 @@
     });
   }
 
-  // Automaticky vynulováno kvůli nemoci z OKbase, ale jen dokud to člověk
-  // ručně nepotvrdí/neupraví (existující _note znamená, že už to řešil).
-  function autoSickQuarter(user, quarter, payment) {
-    return hasSicknessInQuarter(user, quarter) && !payment[`${quarter}_note`];
-  }
-
   function effectiveQuarter(user, quarter) {
     if (afterQuarterStart(user.datum_nastupu, quarter)) return 0;
-    if (autoSickQuarter(user, quarter, getPayment(user))) return 0;
     return getPayment(user)[quarter];
+  }
+
+  // Automatické vynulování čtvrtletí kvůli nemoci z OKbase — zapíše se rovnou
+  // do Firestore i do Historie změn, bez čekání na potvrzení člověkem. Jakmile
+  // má čtvrtletí jakoukoli poznámku (ať už od tohohle mechanismu nebo od
+  // ručního zásahu), znovu se nepřepisuje — člověk to pak může kdykoli sám
+  // ručně přepsat přes běžnou úpravu odměny.
+  function reconcileSicknessAutoZero() {
+    if (!paymentsRef || !users.length) return;
+    for (const user of users) {
+      for (const quarter of ['q1', 'q2', 'q3', 'q4']) {
+        if (afterQuarterStart(user.datum_nastupu, quarter)) continue;
+        if (!hasSicknessInQuarter(user, quarter)) continue;
+        const current = getPayment(user);
+        if (current[`${quarter}_note`]) continue;
+        const stamp = `[${new Date().toLocaleString('cs-CZ')}]`;
+        const next = { ...current, [quarter]: 0, [`${quarter}_note`]: `OKbase: nemoc v průběhu čtvrtletí (automaticky) ${stamp}` };
+        payments[user.id] = next;
+        window.KVEAudit?.logSystemChange({
+          module: 'Docházkový bonus', action: 'Automatické vynulování (nemoc)', entity: user.jmeno || user.id,
+          field: quarter.toUpperCase(), oldValue: Number(current[quarter] || 0), newValue: 0,
+          detail: 'OKbase: nemoc v průběhu čtvrtletí'
+        });
+        firestoreSetDoc(firestoreDoc(paymentsRef, paymentDocId(user.id)), next).catch(error => {
+          console.error(`dochazkovy-bonus.js: nepodařilo se automaticky vynulovat odměnu (nemoc) uživatele ${user.id}.`, error);
+        });
+      }
+    }
   }
 
   function userTotal(user) {
@@ -184,18 +205,13 @@
 
   function renderQuarterCell(user, payment, quarter) {
     const excluded = afterQuarterStart(user.datum_nastupu, quarter);
-    const sick = !excluded && autoSickQuarter(user, quarter, payment);
-    const value = excluded || sick ? 0 : payment[quarter];
+    const value = excluded ? 0 : payment[quarter];
     const note = payment[`${quarter}_note`] || '';
-    const title = excluded
-      ? `Nástup ${formatDate(user.datum_nastupu)} je po začátku kvartálu.`
-      : sick
-        ? 'OKbase hlásí nemoc v tomto čtvrtletí. Klikněte pro potvrzení odměny.'
-        : note;
-    const colorClass = value === 0 ? ((excluded || sick) && !note ? 'cell-disabled-zero' : 'cell-danger') : '';
+    const title = excluded ? `Nástup ${formatDate(user.datum_nastupu)} je po začátku kvartálu.` : note;
+    const colorClass = value === 0 ? (excluded && !note ? 'cell-disabled-zero' : 'cell-danger') : '';
     return `<td class="bonus-quarter-cell ${colorClass}">
       <button type="button" class="bonus-quarter-btn" data-bonus-user="${escapeAttr(user.id)}" data-bonus-quarter="${quarter}" ${excluded ? 'disabled' : ''} title="${escapeAttr(title)}">
-        <span>${Number(value).toLocaleString('cs-CZ')} Kč</span>${note && !excluded ? '<small aria-hidden="true">●</small>' : ''}${sick && !note ? '<small class="bonus-sick-badge" aria-hidden="true">Nemoc</small>' : ''}
+        <span>${Number(value).toLocaleString('cs-CZ')} Kč</span>${note && !excluded ? '<small aria-hidden="true">●</small>' : ''}
       </button>
     </td>`;
   }
@@ -208,7 +224,7 @@
     const target = current > 0 ? 0 : totalAmount / 4;
     pendingChange = { user, quarter, target };
     changeTitle.textContent = `${user.jmeno} – ${quarter.toUpperCase()} → ${target.toLocaleString('cs-CZ')} Kč`;
-    changeReason.value = target === 0 && hasSicknessInQuarter(user, quarter) ? 'OKbase: nemoc v průběhu čtvrtletí' : '';
+    changeReason.value = '';
     openModal(changeModal);
     setTimeout(() => changeReason.focus(), 0);
   }
@@ -292,6 +308,7 @@
     users = buildBonusUsers(people, annotations);
     fillFilters();
     render();
+    reconcileSicknessAutoZero();
   }
 
   function buildBonusUsers(source, annotationsMap) {
@@ -443,6 +460,7 @@
         });
         payments = next;
         render();
+        reconcileSicknessAutoZero();
       }, error => {
         console.error('dochazkovy-bonus.js: chyba synchronizace odměn.', error);
       });
@@ -466,6 +484,7 @@
         });
         sicknessByPerson = next;
         render();
+        reconcileSicknessAutoZero();
       }, error => {
         console.error('dochazkovy-bonus.js: chyba synchronizace nemocí z OKbase.', error);
       });
