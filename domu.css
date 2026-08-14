@@ -76,7 +76,6 @@
 .home-presence-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
 .home-presence-title-wrap { display:flex; align-items:center; gap:8px; min-width:0; }
 .home-presence-title-wrap h1 { margin:0; font-size:1.12rem; color:var(--text); letter-spacing:-.02em; }
-.home-beta-badge { display:inline-flex; align-items:center; min-height:21px; padding:1px 7px; border:1px solid #ddd6fe; border-radius:6px; background:#f5f3ff; color:#6d28d9; font-size:.64rem; font-weight:800; }
 .home-presence-menu-wrap { position:relative; flex:0 0 auto; }
 .home-presence-menu-btn { width:26px; height:26px; display:grid; place-items:center; border:0; border-radius:6px; background:transparent; color:#94a3b8; font:700 1rem/1 inherit; cursor:pointer; }
 .home-presence-menu-btn:hover { background:#f1f5f9; color:#475569; }

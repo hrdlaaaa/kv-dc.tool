@@ -47,6 +47,7 @@
   let state = { rows: {} };
   let userMapping = {};
   const expandedEmptyDays = new Set();
+  const autoDrawInFlight = new Set();
   let activeResultRowKey = '';
   let activeResultName = '';
   let resultDraft = {};
@@ -59,6 +60,7 @@
   prevBtn.addEventListener('click', () => {
     current = new Date(current.getFullYear(), current.getMonth() - 1, 1);
     render();
+    autoDrawPendingRows();
   });
   nextBtn.addEventListener('click', () => {
     const next = new Date(current.getFullYear(), current.getMonth() + 1, 1);
@@ -66,10 +68,12 @@
     if (next > thisMonth) return;
     current = next;
     render();
+    autoDrawPendingRows();
   });
   todayBtn.addEventListener('click', () => {
     current = new Date(today.getFullYear(), today.getMonth(), 1);
     render();
+    autoDrawPendingRows();
     requestAnimationFrame(() => document.getElementById(`wheel-day-${formatDate(today)}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
   });
 
@@ -134,6 +138,7 @@
       if (!dateText) return;
       expandedEmptyDays.add(dateText);
       render();
+      autoDrawPendingRows();
       requestAnimationFrame(() => document.getElementById(`wheel-day-${dateText}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
       return;
     }
@@ -201,6 +206,7 @@
     updateStatus();
     if (!mappingModal.hidden) renderMappingModal();
     render();
+    autoDrawPendingRows();
   }
 
   async function connectFirestore() {
@@ -272,6 +278,7 @@
         snapshot.forEach(docSnap => { next[docSnap.id] = docSnap.data(); });
         state.rows = next;
         render();
+        autoDrawPendingRows();
       }, error => {
         console.error('kolo-stesti.js: chyba synchronizace kola štěstí.', error);
       });
@@ -282,6 +289,7 @@
         if (!mappingModal.hidden) renderMappingModal();
         updateStatus();
         render();
+        autoDrawPendingRows();
       }, error => {
         console.error('kolo-stesti.js: chyba synchronizace mapování uživatelů.', error);
       });
@@ -300,6 +308,7 @@
     if (!date) return;
     current = new Date(date.getFullYear(), date.getMonth(), 1);
     render();
+    autoDrawPendingRows();
     requestAnimationFrame(() => document.getElementById(`wheel-day-${formatDate(date)}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
   }
 
@@ -589,6 +598,36 @@
 
     saveRow(rowKey);
     render();
+  }
+
+  // Kontrolované osoby se pro každý den losují automaticky, jakmile jsou
+  // pro danou směnu k dispozici nějací způsobilí lidé. Ruční "Losovat znovu"
+  // slouží jen k opakování losování, ne k prvnímu losování.
+  function autoDrawPendingRows() {
+    if (!loaded) return;
+    const daysInMonth = new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate();
+    const isCurrentMonth = current.getFullYear() === today.getFullYear() && current.getMonth() === today.getMonth();
+    const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
+
+    for (let day = 1; day <= lastDay; day++) {
+      const date = new Date(current.getFullYear(), current.getMonth(), day);
+      const dateText = formatDate(date);
+      for (const shift of SHIFT_ROWS) {
+        const rowKey = `${dateText}|${shift.key}`;
+        if (autoDrawInFlight.has(rowKey)) continue;
+        const record = getRecord(rowKey, false);
+        const hasNames = Boolean(record && Array.isArray(record.names) && record.names.some(Boolean));
+        if (hasNames) continue;
+        const eligible = getEligibleControlled(dateText, shift.key, rowKey);
+        if (!eligible.length) continue;
+        autoDrawInFlight.add(rowKey);
+        try {
+          drawPeople(rowKey, dateText, shift.key);
+        } finally {
+          autoDrawInFlight.delete(rowKey);
+        }
+      }
+    }
   }
 
   function randomSample(items, count) {
